@@ -11,7 +11,7 @@ components:
             - Mortality()
             - FertilityCrudeBirthRate()
         disease.models:
-            - SI("ischemic_heart_disease"
+            - SI("ischemic_heart_disease")
             - SI("ischemic_stroke")
             #- SI("intracerebral_hemorrhage") # wider yll age range than yld
             - SI("subarachnoid_hemorrhage")
