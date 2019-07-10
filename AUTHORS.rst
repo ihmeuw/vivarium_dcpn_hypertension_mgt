@@ -1,8 +1,8 @@
 Authors
 ======
 
-LEAD ENGINEER:
-RESEARCHER:
+LEAD ENGINEER: Kate Wilson
+RESEARCHER: Meredith Wang
 DATA ANALYST:
 
 Contributors
