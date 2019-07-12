@@ -1,0 +1,67 @@
+plugins:
+    optional:
+        data:
+            controller: "vivarium_public_health.dataset_manager.ArtifactManager"
+            builder_interface: "vivarium_public_health.dataset_manager.ArtifactManagerInterface"
+
+components:
+    vivarium_public_health:
+        population:
+            - BasePopulation()
+            - Mortality()
+            - FertilityCrudeBirthRate()
+        disease.models:
+            - SI("ischemic_heart_disease")
+            - SI("ischemic_stroke")
+            - SI("intracerebral_hemorrhage") # wider yll age range than yld
+            - SI("subarachnoid_hemorrhage")
+            # TODO: PAF of 1 causes: hypertensive heart disease (no incidence) + CKD due to hypertension
+        risks:
+            - Risk("risk_factor.high_systolic_blood_pressure")
+            - RiskEffect("risk_factor.high_systolic_blood_pressure", "cause.ischemic_heart_disease.incidence_rate")
+            - RiskEffect("risk_factor.high_systolic_blood_pressure", "cause.ischemic_stroke.incidence_rate")
+            - RiskEffect("risk_factor.high_systolic_blood_pressure", "cause.intracerebral_hemorrhage.incidence_rate")
+            - RiskEffect("risk_factor.high_systolic_blood_pressure", "cause.subarachnoid_hemorrhage.incidence_rate")
+        metrics:
+            - Disability()
+            - MortalityObserver()
+
+    #vivarium_dcpn_hypertension_mgt.components:
+
+configuration:
+    input_data:
+        location: Ukraine
+        input_draw_number: 0
+        artifact_path: /share/costeffectiveness/artifacts/vivarium_dcpn_hypertension_mgt/ukraine.hdf
+    interpolation:
+        order: 0
+        extrapolate: True
+    randomness:
+        map_size: 1_000_000
+        key_columns: ['entrance_time']
+        random_seed: 0
+    time:
+        start:
+            year: 2020
+            month: 1
+            day: 1
+        end:
+            year: 2030  # TODO: no sim end date in concept model
+            month: 1
+            day: 1
+        step_size: 7 # Days
+    population:
+        population_size: 10_000
+        age_start: 20
+        age_end: 100
+        exit_age: 100
+
+    metrics:
+        disability:
+            by_age: False
+            by_sex: False
+            by_year: False
+        mortality:
+            by_age: False
+            by_sex: False
+            by_year: False
