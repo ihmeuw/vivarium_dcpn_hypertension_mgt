@@ -13,7 +13,7 @@ components:
         disease.models:
             - SI("ischemic_heart_disease")
             - SI("ischemic_stroke")
-            #- SI("intracerebral_hemorrhage") # wider yll age range than yld
+            - SI("intracerebral_hemorrhage") # wider yll age range than yld
             - SI("subarachnoid_hemorrhage")
             # TODO: PAF of 1 causes: hypertensive heart disease (no incidence) + CKD due to hypertension
         risks:
