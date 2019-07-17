@@ -10,8 +10,7 @@ Research repository for the vivarium_dcpn_hypertension_mgt project.
 Model Documentation Resources
 -----------------------------
 
-**You should put links to the concept model documentation and any other**
-**relevant documentation here.**
+CONCEPT MODEL: ``J:/Project/simulation_science/hypertension_management``
 
 Installation
 ------------
