@@ -3,6 +3,7 @@ import logging
 from pathlib import Path
 
 import click
+from loguru import logger
 
 from vivarium_gbd_access.gbd import ARTIFACT_FOLDER
 from vivarium_inputs.data_artifact import utilities
@@ -74,9 +75,13 @@ def update_external_data_artifacts():
 
         for k, data_file in external:
             data = prep_external_data(data_file, location)
-            if k in art:
-                art.replace(k, data)
+            if data.empty:
+                logger.warn(f'No data found for {k} in {location}. This may be '
+                            f'because external data has not yet been prepped for {location}.')
             else:
-                art.write(k, data)
+                if k in art:
+                    art.replace(k, data)
+                else:
+                    art.write(k, data)
 
 
