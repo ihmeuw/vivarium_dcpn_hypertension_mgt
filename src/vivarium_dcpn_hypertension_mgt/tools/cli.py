@@ -69,7 +69,7 @@ def update_external_data_artifacts():
     external = zip(external_data_keys, external_data_files)
 
     for f in artifact_files:
-        art = Artifact(f)
+        art = Artifact(str(f))
         location = art.load('metadata.locations')[0]
 
         for k, data_file in external:
