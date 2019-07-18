@@ -76,7 +76,7 @@ def update_external_data_artifacts():
         for k, data_file in external:
             data = prep_external_data(data_file, location)
             if data.empty:
-                logger.warn(f'No data found for {k} in {location}. This may be '
+                logger.warning(f'No data found for {k} in {location}. This may be '
                             f'because external data has not yet been prepped for {location}.')
             else:
                 if k in art:
