@@ -72,7 +72,7 @@ def update_external_data_artifacts():
     for f in artifact_files:
         art = Artifact(str(f))
         location = art.load('metadata.locations')[0]
-
+        logger.info(f'Updating external data for {location}.')
         for k, data_file in external:
             data = prep_external_data(data_file, location)
             if data.empty:
