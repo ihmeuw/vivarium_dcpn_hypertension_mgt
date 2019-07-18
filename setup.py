@@ -34,6 +34,8 @@ if __name__ == "__main__":
         'jupyterlab',
         'pytest',
         'pytest-mock',
+        'click',
+        'yaml',
     ]
 
     setup(
@@ -53,6 +55,11 @@ if __name__ == "__main__":
         include_package_data=True,
 
         install_requires=install_requirements,
+
+        entry_points='''
+            [console_scripts]
+            build_hypertension_artifact=vivarium_dcpn_hypertension_mgt.tools.cli:build_hypertension_artifact
+        ''',
 
         zip_safe=False,
     )
