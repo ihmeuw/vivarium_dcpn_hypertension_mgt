@@ -1,62 +1,62 @@
-location,hypertension_drug_category,drug_class,guideline_only,dosage,DU,BB,ACEI,ARB,CCB,Other,percentage_among_therapy_category_mean,percentage_among_therapy_category_lb,percentage_among_therapy_category_ub,percentage_among_therapy_category_uncertainty_level
-China,mono,CCB,1,scenario,0,0,0,0,1,0,49.80,49.20,50.50,95.00
-China,mono,Diuretics ,1,scenario,1,0,0,0,0,0,4.20,4.00,4.50,95.00
-China,mono,ARB ,1,scenario,0,0,0,1,0,0,23.50,22.90,24.00,95.00
-China,mono,ACEI,1,scenario,0,0,1,0,0,0,7.90,7.50,8.20,95.00
-China,mono,Beta blocker,1,scenario,0,1,0,0,0,0,9.30,8.90,9.70,95.00
-China,mono,CAD ,0,,0,0,0,0,0,1,0.40,0.30,0.50,95.00
-China,mono,Other non-first line drugs ,0,,0,0,0,0,0,1,4.90,4.60,5.20,95.00
-China,dual,ACEI + CCB,1,scenario,0,0,1,0,1,0,18.30,17.00,19.70,95.00
-China,dual,ARB + CCB,1,scenario,0,0,0,1,1,0,17.00,15.80,18.30,95.00
-China,dual,ACEI + Diuetics,1,scenario,1,0,1,0,0,0,2.20,1.70,2.80,95.00
-China,dual,ARB + Diuretics ,1,scenario,1,0,0,1,0,0,2.10,1.70,2.70,95.00
-China,dual,CCB + Diuretics ,1,scenario,1,0,0,0,1,0,3.50,2.90,4.10,95.00
-China,dual,CCB + Beta blocker ,1,scenario,0,1,0,0,1,0,9.30,8.40,10.40,95.00
-China,dual,Fixed-dose combination ,1,,0,0,0,0,0,1,38.90,37.20,40.50,95.00
-China,dual,ACEI + ARB ,1,scenario,0,0,1,1,0,0,0.40,0.20,0.70,95.00
-China,dual,Other non-first line drug combo,0,,0,0,0,0,0,1,8.30,,,
-China,triple,ACEI/ARB + CCB + Diuretics ,1,scenario,1,0,scenario,scenario,1,0,12.70,8.60,18.00,95.00
-China,triple,ACEI/ARB + CCB + Diuretics + Beta blocker,1,scenario,1,1,scenario,scenario,1,0,2.80,1.00,6.10,95.00
-China,triple,Other non-first line drug combo ,0,,0,0,0,0,0,1,84.50,,,
-Russian Federation,mono,CCB,1,scenario,0,0,0,0,1,0,13.90,,,
-Russian Federation,mono,Diuretics ,1,scenario,1,0,0,0,0,0,19.79,,,
-Russian Federation,mono,ARB ,1,scenario,0,0,0,1,0,0,8.56,,,
-Russian Federation,mono,ACEI,1,scenario,0,0,1,0,0,0,34.76,,,
-Russian Federation,mono,Beta blocker,1,scenario,0,1,0,0,0,0,22.99,,,
-Russian Federation,mono,Other non-first line drugs ,0,,0,0,0,0,0,1,0.00,,,
-Russian Federation,dual,2 effective drug class*,1,,0,0,0,0,0,1,100.00,,,
-Russian Federation,triple,3 effective drug class**,1,,0,0,0,0,0,1,100.00,,,
-Malaysia ,mono,CCB,1,scenario,0,0,0,0,1,0,33.10,,,
-Malaysia ,mono,Diuretics ,1,scenario,1,0,0,0,0,0,12.60,,,
-Malaysia ,mono,ARB ,1,scenario,0,0,0,1,0,0,4.90,,,
-Malaysia ,mono,ACEI,1,scenario,0,0,1,0,0,0,17.80,,,
-Malaysia ,mono,Beta blocker,1,scenario,0,1,0,0,0,0,29.10,,,
-Malaysia ,mono,Other non-first line drugs ,0,,0,0,0,0,0,1,2.50,,,
-Malaysia ,dual,CCB + Beta blocker ,1,scenario,0,1,0,0,1,0,20.00,,,
-Malaysia ,dual,Diuretics + Beta blocker ,1,scenario,1,1,0,0,0,0,17.00,,,
-Malaysia ,dual,ACEI + CCB,1,scenario,0,0,1,0,1,0,11.90,,,
-Malaysia ,dual,CCB + Diuretics ,1,scenario,1,0,0,0,1,0,10.30,,,
-Malaysia ,dual,ARB + Diuretics ,1,scenario,1,0,0,1,0,0,9.20,,,
-Malaysia ,dual,Other first-line drug combos,0,,0,0,0,0,0,1,23.30,,,
-Malaysia ,dual,Non-first-line drug combo ,0,,0,0,0,0,0,1,8.30,,,
-Malaysia ,triple,CCB + ARB/ACEI + Beta blocker ,1,scenario,0,1,scenario,scenario,1,0,22.20,,,
-Malaysia ,triple,DU + ARB/ACEI + Beta blocker ,1,scenario,1,1,scenario,scenario,0,0,22.20,,,
-Malaysia ,triple,CCB + DU + ARB/ACEI,1,scenario,1,0,scenario,scenario,1,0,22.20,,,
-Malaysia ,triple,CCB + DU + Beta blocker ,1,scenario,1,1,0,0,1,0,33.30,,,
-Malaysia ,quad,CCB + ACEI + BB + AB,0,,0,0,0,0,0,1,10.13,,,
-India ,,,,,0,0,0,0,0,0,,,,
-India ,,,,,0,0,0,0,0,0,,,,
-India ,,,,,0,0,0,0,0,0,,,,
-India ,,,,,0,0,0,0,0,0,,,,
-India ,,,,,0,0,0,0,0,0,,,,
-Nigeria ,mono,CCB,1,scenario,0,0,0,0,1,0,38.93,,,
-Nigeria ,mono,Diuretics standard dose ,1,1,1,0,0,0,0,0,7.11,,,
-Nigeria ,mono,Diuretics double dose,1,2,1,0,0,0,0,0,1.61,,,
-Nigeria ,mono,ARB ,1,scenario,0,0,0,1,0,0,4.70,,,
-Nigeria ,mono,ACEI,1,scenario,0,0,1,0,0,0,24.97,,,
-Nigeria ,mono,Beta blocker,1,scenario,0,1,0,0,0,0,6.71,,,
-Nigeria ,mono,CAD ,0,,0,0,0,0,0,1,13.83,,,
-Nigeria ,mono,Other non-first line drugs ,0,,0,0,0,0,0,1,2.15,,,
-Nigeria ,dual,2 effective drug class*,1,,0,0,0,0,0,1,100.00,,,
-Nigeria ,triple,3 effective drug class**,1,,0,0,0,0,0,1,100.00,,,
-Nigeria ,quad,4 effective drug classes,1,,0,0,0,0,0,1,100.00,,,
+location,hypertension_drug_category,drug_class,DU,BB,ACEI,ARB,CCB,other,percentage_among_therapy_category_mean,percentage_among_therapy_category_lb,percentage_among_therapy_category_ub,percentage_among_therapy_category_uncertainty_level
+China,mono,CCB,0,0,0,0,1,0,49.80,49.20,50.50,95.00
+China,mono,Diuretics ,1,0,0,0,0,0,4.20,4.00,4.50,95.00
+China,mono,ARB ,0,0,0,1,0,0,23.50,22.90,24.00,95.00
+China,mono,ACEI,0,0,1,0,0,0,7.90,7.50,8.20,95.00
+China,mono,Beta blocker,0,1,0,0,0,0,9.30,8.90,9.70,95.00
+China,mono,CAD ,0,0,0,0,0,1,0.40,0.30,0.50,95.00
+China,mono,Other non-first line drugs ,0,0,0,0,0,1,4.90,4.60,5.20,95.00
+China,dual,ACEI + CCB,0,0,1,0,1,0,18.30,17.00,19.70,95.00
+China,dual,ARB + CCB,0,0,0,1,1,0,17.00,15.80,18.30,95.00
+China,dual,ACEI + Diuetics,1,0,1,0,0,0,2.20,1.70,2.80,95.00
+China,dual,ARB + Diuretics ,1,0,0,1,0,0,2.10,1.70,2.70,95.00
+China,dual,CCB + Diuretics ,1,0,0,0,1,0,3.50,2.90,4.10,95.00
+China,dual,CCB + Beta blocker ,0,1,0,0,1,0,9.30,8.40,10.40,95.00
+China,dual,Fixed-dose combination ,0,0,0,0,0,1,38.90,37.20,40.50,95.00
+China,dual,ACEI + ARB ,0,0,1,1,0,0,0.40,0.20,0.70,95.00
+China,dual,Other non-first line drug combo,0,0,0,0,0,1,8.30,,,
+China,triple,ACEI/ARB + CCB + Diuretics ,1,0,parameter,parameter,1,0,12.70,8.60,18.00,95.00
+China,triple,ACEI/ARB + CCB + Diuretics + Beta blocker,1,1,parameter,parameter,1,0,2.80,1.00,6.10,95.00
+China,triple,Other non-first line drug combo ,0,0,0,0,0,1,84.50,,,
+Russian Federation,mono,CCB,0,0,0,0,1,0,13.90,,,
+Russian Federation,mono,Diuretics ,1,0,0,0,0,0,19.79,,,
+Russian Federation,mono,ARB ,0,0,0,1,0,0,8.56,,,
+Russian Federation,mono,ACEI,0,0,1,0,0,0,34.76,,,
+Russian Federation,mono,Beta blocker,0,1,0,0,0,0,22.99,,,
+Russian Federation,mono,Other non-first line drugs ,0,0,0,0,0,1,0.00,,,
+Russian Federation,dual,2 effective drug class*,0,0,0,0,0,1,100.00,,,
+Russian Federation,triple,3 effective drug class**,0,0,0,0,0,1,100.00,,,
+Malaysia ,mono,CCB,0,0,0,0,1,0,33.10,,,
+Malaysia ,mono,Diuretics ,1,0,0,0,0,0,12.60,,,
+Malaysia ,mono,ARB ,0,0,0,1,0,0,4.90,,,
+Malaysia ,mono,ACEI,0,0,1,0,0,0,17.80,,,
+Malaysia ,mono,Beta blocker,0,1,0,0,0,0,29.10,,,
+Malaysia ,mono,Other non-first line drugs ,0,0,0,0,0,1,2.50,,,
+Malaysia ,dual,CCB + Beta blocker ,0,1,0,0,1,0,20.00,,,
+Malaysia ,dual,Diuretics + Beta blocker ,1,1,0,0,0,0,17.00,,,
+Malaysia ,dual,ACEI + CCB,0,0,1,0,1,0,11.90,,,
+Malaysia ,dual,CCB + Diuretics ,1,0,0,0,1,0,10.30,,,
+Malaysia ,dual,ARB + Diuretics ,1,0,0,1,0,0,9.20,,,
+Malaysia ,dual,Other first-line drug combos,0,0,0,0,0,1,23.30,,,
+Malaysia ,dual,Non-first-line drug combo ,0,0,0,0,0,1,8.30,,,
+Malaysia ,triple,CCB + ARB/ACEI + Beta blocker ,0,1,parameter,parameter,1,0,22.20,,,
+Malaysia ,triple,DU + ARB/ACEI + Beta blocker ,1,1,parameter,parameter,0,0,22.20,,,
+Malaysia ,triple,CCB + DU + ARB/ACEI,1,0,parameter,parameter,1,0,22.20,,,
+Malaysia ,triple,CCB + DU + Beta blocker ,1,1,0,0,1,0,33.30,,,
+Malaysia ,quad,CCB + ACEI + BB + AB,0,0,0,0,0,1,10.13,,,
+India ,,,0,0,0,0,0,0,,,,
+India ,,,0,0,0,0,0,0,,,,
+India ,,,0,0,0,0,0,0,,,,
+India ,,,0,0,0,0,0,0,,,,
+India ,,,0,0,0,0,0,0,,,,
+Nigeria ,mono,CCB,0,0,0,0,1,0,38.93,,,
+Nigeria ,mono,Diuretics standard dose ,1,0,0,0,0,0,7.11,,,
+Nigeria ,mono,Diuretics double dose,2,0,0,0,0,0,1.61,,,
+Nigeria ,mono,ARB ,0,0,0,1,0,0,4.70,,,
+Nigeria ,mono,ACEI,0,0,1,0,0,0,24.97,,,
+Nigeria ,mono,Beta blocker,0,1,0,0,0,0,6.71,,,
+Nigeria ,mono,CAD ,0,0,0,0,0,1,13.83,,,
+Nigeria ,mono,Other non-first line drugs ,0,0,0,0,0,1,2.15,,,
+Nigeria ,dual,2 effective drug class*,0,0,0,0,0,1,100.00,,,
+Nigeria ,triple,3 effective drug class**,0,0,0,0,0,1,100.00,,,
+Nigeria ,quad,4 effective drug classes,0,0,0,0,0,1,100.00,,,
