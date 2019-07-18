@@ -42,7 +42,7 @@ def prep_external_data(data_file, location):
 
 
 def convert_confidence_interval(data, key):
-    data[f'{key}_sd'] = 0
+    data[f'{key}_sd'] = 0.0
     no_ci_to_convert = (data[f'{key}_uncertainty_level'].isnull())
     no_ci = data[no_ci_to_convert]
 
