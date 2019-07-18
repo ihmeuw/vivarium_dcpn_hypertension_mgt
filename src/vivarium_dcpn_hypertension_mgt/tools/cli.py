@@ -3,18 +3,16 @@ import logging
 from pathlib import Path
 
 import click
-import pandas as pd
 
 from vivarium_gbd_access.gbd import ARTIFACT_FOLDER
 from vivarium_inputs.data_artifact import utilities
 from vivarium_inputs.data_artifact.cli import main
 from vivarium_public_health.dataset_manager import Artifact
+from .utilities import patch_artifact, prep_external_data, get_external_data_files
 
 
 @click.command()
-@click.argument('model_specification',
-                help='Name of the model specification you wish to build an artifact for, e.g., bangladesh.yaml '
-                     'Should be available in the model_specifications folder of this repository.')
+@click.argument('model_specification')
 @click.option('--append', '-a', is_flag=True,
               help="Preserve existing artifact and append to it")
 @click.option('--verbose', '-v', is_flag=True,
@@ -22,11 +20,12 @@ from vivarium_public_health.dataset_manager import Artifact
 @click.option('--pdb', 'debugger', is_flag=True, help='Drop the debugger if an error occurs')
 def build_hypertension_artifact(model_specification, append, verbose, debugger):
     """
-    build_washout_artifact is a program for building data artifacts locally
-    for the obesity_washout model.
+    build_hypertension_artifact is a program for building data artifacts locally
+    for the hypertension_mgt model.
 
-    It will build an artifact for the ``vivarium_ihme_obesity_washout.yaml``
-    model specification file stored in the repository.
+    MODEL_SPECIFICATION should be the name of the model specification you wish
+    to build an artifact for, e.g., bangladesh.yaml and should be available in
+    the model_specifications folder of this repository.
 
     It requires access to the J drive and /ihme. If you are running this job
     from a qlogin on the cluster, you must specifically request J drive access
@@ -41,7 +40,7 @@ def build_hypertension_artifact(model_specification, append, verbose, debugger):
     try:
         main(str(model_specification_path), output_root, None, append)
         artifact_path = output_root / model_specification.replace('yaml', 'hdf')
-        _patch_artifact(artifact_path)
+        patch_artifact(artifact_path)
     except (BdbQuit, KeyboardInterrupt):
         raise
     except Exception as e:
@@ -65,7 +64,7 @@ def update_external_data_artifacts():
     artifact_folder = ARTIFACT_FOLDER / 'vivarium_dcpn_hypertension_mgt'
     artifact_files = [f for f in artifact_folder.iterdir() if f.suffix == '.hdf']
 
-    external_data_files = _get_external_data_files()
+    external_data_files = get_external_data_files()
     external_data_keys = [f'health_technology.hypertension_drugs.{f.stem}' for f in external_data_files]
     external = zip(external_data_keys, external_data_files)
 
@@ -74,35 +73,10 @@ def update_external_data_artifacts():
         location = art.load('metadata.locations')[0]
 
         for k, data_file in external:
-            data = _prep_external_data(data_file, location)
+            data = prep_external_data(data_file, location)
             if k in art:
                 art.replace(k, data)
             else:
                 art.write(k, data)
 
 
-def _patch_artifact(artifact_path: Path):
-    art = Artifact(str(artifact_path))
-    location = art.load('metadata.locations')[0]
-
-    data_files = _get_external_data_files()
-    for file in data_files:
-        data = _prep_external_data(file, location)
-        name = file.stem
-        art.write(f'health_technology.hypertension_drugs.{name}', data)
-
-
-def _prep_external_data(data_file, location):
-    data = pd.read_csv(data_file)
-    data.location = data.location.apply(lambda s: s.strip())  # some locs have trailing spaces so won't match
-    data = data[data.location == location]
-    if 'sex' in data and len(data.sex.unique() == 3):
-        # we have both sex and age specific values - we are only using sex specific for now
-        data = data[data.sex != 'Both']
-
-    return data
-
-
-def _get_external_data_files():
-    external_data_path = Path(__file__).parent.parent / 'external_data'
-    return [f for f in external_data_path.iterdir() if f.suffix == '.csv']
