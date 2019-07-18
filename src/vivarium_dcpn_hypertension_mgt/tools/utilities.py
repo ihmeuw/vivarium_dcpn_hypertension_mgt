@@ -20,7 +20,7 @@ def prep_external_data(data_file, location):
     if 'location' in data:
         data.location = data.location.apply(lambda s: s.strip())  # some locs have trailing spaces so won't match
         data = data[data.location == location]
-    if 'sex' in data and len(data.sex.unique() == 3):
+    if 'sex' in data and len(data.sex.unique()) == 3:
         # we have both sex and age specific values - we are only using sex specific for now
         data = data[data.sex != 'Both']
 
