@@ -67,13 +67,12 @@ def update_external_data_artifacts():
 
     external_data_files = get_external_data_files()
     external_data_keys = [f'health_technology.hypertension_drugs.{f.stem}' for f in external_data_files]
-    external = zip(external_data_keys, external_data_files)
 
     for f in artifact_files:
         art = Artifact(str(f))
         location = art.load('metadata.locations')[0]
         logger.info(f'Updating external data for {location}.')
-        for k, data_file in external:
+        for k, data_file in zip(external_data_keys, external_data_files):
             data = prep_external_data(data_file, location)
             if data.empty:
                 logger.warning(f'No data found for {k} in {location}. This may be '
