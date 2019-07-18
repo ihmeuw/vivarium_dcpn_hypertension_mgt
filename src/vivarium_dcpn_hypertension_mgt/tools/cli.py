@@ -1,7 +1,6 @@
 from bdb import BdbQuit
 import logging
 from pathlib import Path
-import yaml
 
 import click
 import pandas as pd
@@ -42,7 +41,7 @@ def build_hypertension_artifact(model_specification, append, verbose, debugger):
     try:
         main(str(model_specification_path), output_root, None, append)
         artifact_path = output_root / model_specification.replace('yaml', 'hdf')
-        _patch_artifact(artifact_path, model_specification_path)
+        _patch_artifact(artifact_path)
     except (BdbQuit, KeyboardInterrupt):
         raise
     except Exception as e:
@@ -72,23 +71,25 @@ def update_external_data_artifacts():
 
     for f in artifact_files:
         art = Artifact(f)
-        location =
-        for k, f in external:
+        location = art.load('metadata.locations')[0]
+
+        for k, data_file in external:
+            data = _prep_external_data(data_file, location)
             if k in art:
-                art.remove(k)
-                df =
+                art.replace(k, data)
+            else:
+                art.write(k, data)
 
 
-
-def _patch_artifact(artifact_path: Path, model_specification: Path):
+def _patch_artifact(artifact_path: Path):
     art = Artifact(str(artifact_path))
-    location = yaml.safe_load(model_specification.read_text())['configuration']['input_data']['location']
+    location = art.load('metadata.locations')[0]
 
     data_files = _get_external_data_files()
     for file in data_files:
-        df = _prep_external_data(file, location)
+        data = _prep_external_data(file, location)
         name = file.stem
-        art.write(f'health_technology.hypertension_drugs.{name}', df)
+        art.write(f'health_technology.hypertension_drugs.{name}', data)
 
 
 def _prep_external_data(data_file, location):

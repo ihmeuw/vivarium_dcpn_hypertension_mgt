@@ -35,7 +35,6 @@ if __name__ == "__main__":
         'pytest',
         'pytest-mock',
         'click',
-        'yaml',
     ]
 
     setup(
@@ -59,6 +58,7 @@ if __name__ == "__main__":
         entry_points='''
             [console_scripts]
             build_hypertension_artifact=vivarium_dcpn_hypertension_mgt.tools.cli:build_hypertension_artifact
+            update_external_data_artifacts=vivarium_dcpn_hypertension_mgt.tools.cli:update_external_data_artifacts
         ''',
 
         zip_safe=False,
