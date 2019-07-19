@@ -32,6 +32,13 @@ def prep_external_data(data_file, location):
         data.sex = data.sex.apply(lambda s: s.strip())
         data = data[data.sex == 'Both']
 
+    if 'sex' in data and set(data.sex) == {'Both'}:  # duplicate for male, female
+        male = data
+        male.sex = 'Male'
+        female = data.copy()
+        female.sex = 'Female'
+        data = pd.concat([male, female])
+
     if data_file.stem in CONFIDENCE_INTERVALS_TO_CONVERT:
         for k in CONFIDENCE_INTERVALS_TO_CONVERT[data_file.stem]:
             data = convert_confidence_interval(data, k)
