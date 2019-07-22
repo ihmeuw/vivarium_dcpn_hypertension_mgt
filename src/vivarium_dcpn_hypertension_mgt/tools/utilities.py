@@ -1,13 +1,11 @@
 from pathlib import Path
+import numpy as np
 import pandas as pd
 
+from risk_distributions import Normal
 from vivarium_public_health.dataset_manager import Artifact
 
-CONFIDENCE_INTERVALS_TO_CONVERT = {
-    'baseline_treatment_coverage': ['treated_among_hypertensive', 'control_among_hypertensive', 'control_among_treated'],
-    'baseline_therapy_categories': ['percentage_among_treated'],
-    'baseline_treatment_profiles': ['percentage_among_therapy_category']
-}
+DRAW_COLUMNS = [f'draw_{i}' for i in range(1000)]
 
 
 def patch_artifact(artifact_path: Path):
@@ -39,28 +37,84 @@ def prep_external_data(data_file, location):
         female.sex = 'Female'
         data = pd.concat([male, female])
 
-    if data_file.stem in CONFIDENCE_INTERVALS_TO_CONVERT:
-        for k in CONFIDENCE_INTERVALS_TO_CONVERT[data_file.stem]:
-            data = convert_confidence_interval(data, k)
+    data = transform_data(data_file.stem, data)
 
-    if data_file.stem == 'baseline_treatment_profiles':
-        data = collapse_other_drug_profiles(data)
     return data
 
 
-def convert_confidence_interval(data, key):
-    data[f'{key}_sd'] = 0.0
-    no_ci_to_convert = (data[f'{key}_uncertainty_level'].isnull())
-    no_ci = data[no_ci_to_convert]
+CI_WIDTH_MAP = {99: 2.58, 95: 1.96, 90: 1.65, 68: 1}
 
-    ci = data[~no_ci_to_convert]
-    ci_width_map = {99: 2.58, 95: 1.96, 90: 1.65, 68: 1}
 
-    ci_widths = ci[f'{key}_uncertainty_level'].map(lambda l: ci_width_map[l] * 2)
-    ci[f'{key}_sd'] = (ci[f'{key}_ub'] - ci[f'{key}_lb']) / ci_widths
+def transform_data(data_type, data):
+    transformation_specification = {
+        'baseline_treatment_coverage': {
+            'measures': ['treated_among_hypertensive', 'control_among_treated'],
+            'columns': ['location', 'sex', 'age_group_start', 'age_group_end',
+                        'measure', 'hypertension_threshold'] + DRAW_COLUMNS,
+        },
+        'baseline_therapy_categories': {
+            'measures': ['percentage_among_treated'],
+            'columns': ['location', 'therapy_category', 'measure'] + DRAW_COLUMNS
+        },
+        'baseline_treatment_profiles': {
+            'measures': ['percentage_among_therapy_category'],
+            'columns': ['location', 'hypertension_drug_category', 'DU', 'BB',
+                        'ACEI', 'ARB', 'CCB', 'other', 'measure'] + DRAW_COLUMNS
+        },
+        'drug_efficacy': {
+            'measures': ['half_dose_efficacy_mean', 'standard_dose_efficacy_mean', 'double_dose_efficacy_mean',],
+            'columns': ['name', 'sd_mean', 'measure'] + DRAW_COLUMNS
+        }
+    }
 
-    data = pd.concat([ci, no_ci])
-    return data.drop(columns=[f'{key}_lb', f'{key}_ub', f'{key}_uncertainty_level'])
+    if data_type not in transformation_specification:
+        return data
+
+    spec = transformation_specification[data_type]
+    measure_data = []
+
+    for m in spec['measures']:
+        measure_data.append(create_draw_level_data(data, m, spec['columns']))
+
+    return pd.concat(measure_data)
+
+
+def create_draw_level_data(data, measure, columns_to_keep):
+    data['measure'] = measure
+    measure_columns = {c: c.replace(f'{measure}_', '') for c in data if measure in c}
+
+    if measure == 'drug_efficacy':
+        measure_columns[f'{"_".join(measure.split("_")[:3])}_sd_mean'] = 'sd_mean'
+
+    data = data.rename(columns=measure_columns)
+
+    # FIXME: shouldn't default like this but this is just a temp measure until I get the actual levels from MW
+    if 'uncertainty_level' not in data:
+        data['uncertainty_level'] = 95
+
+    no_ci_to_convert = data.uncertainty_level.isnull()
+
+    to_draw = data[~no_ci_to_convert]
+
+    ci_widths = to_draw.uncertainty_level.map(lambda l: CI_WIDTH_MAP.get(l, 0) * 2)
+
+    data.loc[~no_ci_to_convert, 'sd'] = (to_draw['ub'] - to_draw['lb']) / ci_widths
+
+    if measure == 'percentage_among_therapy_category':
+        data = collapse_other_drug_profiles(data)
+
+    draws = pd.DataFrame(data=np.transpose(np.tile(data['mean'].values, (1000, 1))),
+                         columns=DRAW_COLUMNS, index=data.index)
+
+    data = pd.concat([data, draws], axis=1)
+
+    d = np.random.random(1000)
+    for row in data[~no_ci_to_convert].iterrows():
+        dist = Normal(mean=row[1]['mean'], sd=row[1]['sd'])
+        draws = dist.ppf(d)
+        data.loc[row[0], DRAW_COLUMNS] = draws
+
+    return data.filter(columns_to_keep + DRAW_COLUMNS)
 
 
 def collapse_other_drug_profiles(data):
@@ -79,10 +133,8 @@ def collapse_other_drug_profiles(data):
 
         collapsed_profile = category_profiles.iloc[[0]]
         collapsed_profile['drug_class'] = 'other'
-        collapsed_profile['percentage_among_therapy_category_mean'] = \
-            category_profiles.percentage_among_therapy_category_mean.sum()
-        collapsed_profile['percentage_among_therapy_category_sd'] = \
-            (category_profiles.percentage_among_therapy_category_sd ** 2).sum()
+        collapsed_profile['mean'] = category_profiles.mean.sum()
+        collapsed_profile['sd'] = ((category_profiles.sd ** 2).sum()) ** 0.5
 
         prepped_profiles.append(collapsed_profile)
 
