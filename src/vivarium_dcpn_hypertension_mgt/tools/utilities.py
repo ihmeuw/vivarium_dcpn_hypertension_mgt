@@ -6,6 +6,7 @@ from loguru import logger
 
 from risk_distributions import Normal
 from vivarium_inputs.data_artifact.cli import main as build_artifact
+from vivarium_inputs.utilities import reshape
 from vivarium_public_health.dataset_manager import Artifact
 
 DRAW_COLUMNS = [f'draw_{i}' for i in range(1000)]
@@ -76,7 +77,7 @@ def prep_external_data(data_file, location):
         female.sex = 'Female'
         data = pd.concat([male, female])
 
-    return data
+    return reshape(data)
 
 
 def transform_data(data_type, data):
