@@ -37,7 +37,7 @@ TRANSFORMATION_SPECIFICATION = {
 }
 
 
-def patch_artifact(artifact_path: Path):
+def patch_external_data(artifact_path: Path):
     art = Artifact(str(artifact_path))
     location = art.load('metadata.locations')[0]
     logger.info(f'Beginning external data for {location}.')
@@ -164,4 +164,4 @@ def get_external_data_files():
 def build_and_patch(model_spec, output_root, append):
     build_artifact(str(model_spec), output_root, None, append)
     artifact_path = output_root / f'{model_spec.stem}.hdf'
-    patch_artifact(artifact_path)
+    patch_external_data(artifact_path)

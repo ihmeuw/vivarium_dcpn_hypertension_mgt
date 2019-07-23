@@ -6,7 +6,7 @@ import click
 
 from vivarium_gbd_access.gbd import ARTIFACT_FOLDER
 from vivarium_inputs.data_artifact import utilities
-from .utilities import patch_artifact, build_and_patch
+from .utilities import patch_external_data, build_and_patch
 
 
 @click.command()
@@ -61,7 +61,7 @@ def update_external_data_artifacts():
     artifact_files = [f for f in artifact_folder.iterdir() if f.suffix == '.hdf']
 
     for f in artifact_files:
-        patch_artifact(f)
+        patch_external_data(f)
 
 
 
