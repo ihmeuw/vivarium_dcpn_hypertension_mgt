@@ -12,6 +12,8 @@ DRAW_COLUMNS = [f'draw_{i}' for i in range(1000)]
 
 CI_WIDTH_MAP = {99: 2.58, 95: 1.96, 90: 1.65, 68: 1}
 
+RANDOM_SEED = 123456
+
 TRANSFORMATION_SPECIFICATION = {
     'baseline_treatment_coverage': {
         'measures': ['treated_among_hypertensive', 'control_among_treated'],
@@ -65,14 +67,14 @@ def prep_external_data(data_file, location):
         data.sex = data.sex.apply(lambda s: s.strip())
         data = data[data.sex == 'Both']
 
+    data = transform_data(data_file.stem, data)
+
     if 'sex' in data and set(data.sex) == {'Both'}:  # duplicate for male, female
         male = data
         male.sex = 'Male'
         female = data.copy()
         female.sex = 'Female'
         data = pd.concat([male, female])
-
-    data = transform_data(data_file.stem, data)
 
     return data
 
@@ -119,6 +121,7 @@ def create_draw_level_data(data, measure, columns_to_keep):
 
     data = pd.concat([data, draws], axis=1)
 
+    np.random.seed(RANDOM_SEED)
     d = np.random.random(1000)
     for row in data.loc[~no_ci_to_convert].iterrows():
         dist = Normal(mean=row[1]['mean'], sd=row[1]['sd'])
