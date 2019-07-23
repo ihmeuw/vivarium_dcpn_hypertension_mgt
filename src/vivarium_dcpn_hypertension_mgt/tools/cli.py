@@ -3,13 +3,10 @@ import logging
 from pathlib import Path
 
 import click
-from loguru import logger
 
 from vivarium_gbd_access.gbd import ARTIFACT_FOLDER
 from vivarium_inputs.data_artifact import utilities
-from vivarium_inputs.data_artifact.cli import main
-from vivarium_public_health.dataset_manager import Artifact
-from .utilities import patch_artifact, prep_external_data, get_external_data_files
+from .utilities import patch_artifact, build_and_patch
 
 
 @click.command()
@@ -39,9 +36,7 @@ def build_hypertension_artifact(model_specification, append, verbose, debugger):
     utilities.setup_logging(output_root, verbose, None, model_specification_path, append)
 
     try:
-        main(str(model_specification_path), output_root, None, append)
-        artifact_path = output_root / model_specification.replace('yaml', 'hdf')
-        patch_artifact(artifact_path)
+        build_and_patch(model_specification_path, output_root, append)
     except (BdbQuit, KeyboardInterrupt):
         raise
     except Exception as e:
@@ -65,22 +60,8 @@ def update_external_data_artifacts():
     artifact_folder = ARTIFACT_FOLDER / 'vivarium_dcpn_hypertension_mgt'
     artifact_files = [f for f in artifact_folder.iterdir() if f.suffix == '.hdf']
 
-    external_data_files = get_external_data_files()
-    external_data_keys = [f'health_technology.hypertension_drugs.{f.stem}' for f in external_data_files]
-
     for f in artifact_files:
-        art = Artifact(str(f))
-        location = art.load('metadata.locations')[0]
-        logger.info(f'Updating external data for {location}.')
-        for k, data_file in zip(external_data_keys, external_data_files):
-            data = prep_external_data(data_file, location)
-            if data.empty:
-                logger.warning(f'No data found for {k} in {location}. This may be '
-                               f'because external data has not yet been prepped for {location}.')
-            else:
-                if k in art:
-                    art.replace(k, data)
-                else:
-                    art.write(k, data)
+        patch_artifact(f)
+
 
 
