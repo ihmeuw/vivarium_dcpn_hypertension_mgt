@@ -29,7 +29,7 @@ TRANSFORMATION_SPECIFICATION = {
     },
     'drug_efficacy': {
         'measures': ['half_dose_efficacy_mean', 'standard_dose_efficacy_mean', 'double_dose_efficacy_mean'],
-        'columns': ['medication', 'sd_mean', 'measure'] + DRAW_COLUMNS
+        'columns': ['medication', 'sd_mean', 'dosage'] + DRAW_COLUMNS
     }
 }
 
