@@ -142,7 +142,7 @@ def collapse_other_drug_profiles(data):
 
         collapsed_profile = category_profiles.iloc[[0]]
         collapsed_profile['drug_class'] = 'other'
-        collapsed_profile['mean'] = category_profiles.mean.sum()
+        collapsed_profile['mean'] = category_profiles['mean'].sum()
         collapsed_profile['sd'] = ((category_profiles.sd ** 2).sum()) ** 0.5
 
         prepped_profiles.append(collapsed_profile)
