@@ -94,6 +94,8 @@ def create_draw_level_data(data, measure, columns_to_keep):
     if 'efficacy' in measure:
         measure_columns[f'{"_".join(measure.split("_")[:3])}_sd_mean'] = 'sd_mean'
         measure_columns['name'] = 'medication'
+        measure_columns['measure'] = 'dosage'
+        data.measure = data.measure.apply(lambda s: s.split('_')[0])
 
     data = data.rename(columns=measure_columns)
 
