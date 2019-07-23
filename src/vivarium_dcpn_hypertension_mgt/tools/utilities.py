@@ -124,12 +124,12 @@ def create_draw_level_data(data, measure, columns_to_keep):
 
     np.random.seed(RANDOM_SEED)
     d = np.random.random(1000)
-    for row in data.loc[~no_ci_to_convert].iterrows():
+    for row in data[~no_ci_to_convert].iterrows():
         dist = Normal(mean=row[1]['mean'], sd=row[1]['sd'])
         draws = dist.ppf(d)
         data.loc[row[0], DRAW_COLUMNS] = draws
 
-    return data.filter(columns_to_keep + DRAW_COLUMNS)
+    return data.filter(columns_to_keep)
 
 
 def collapse_other_drug_profiles(data):
