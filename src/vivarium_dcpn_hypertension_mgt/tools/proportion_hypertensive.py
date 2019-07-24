@@ -1,16 +1,16 @@
 import os
 import sys
 
-from pathlib import Path
 import numpy as np
 import pandas as pd
-import drmaa
-from loguru import logger
 
 from risk_distributions import EnsembleDistribution
 from vivarium_gbd_access.gbd import ARTIFACT_FOLDER
 from vivarium_public_health.dataset_manager import Artifact
 from vivarium_public_health.risks.data_transformations import pivot_categorical
+from vivarium_cluster_tools.psimulate.utilities import get_drmaa
+
+drmaa = get_drmaa()
 
 HYPERTENSION_THRESHOLD = 140
 HDF_KEY = 'proportion_hypertensive'
