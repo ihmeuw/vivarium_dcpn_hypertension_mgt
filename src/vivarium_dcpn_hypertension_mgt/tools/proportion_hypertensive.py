@@ -3,6 +3,7 @@ import sys
 
 import numpy as np
 import pandas as pd
+from pathlib import Path
 
 from risk_distributions import EnsembleDistribution
 from vivarium_gbd_access.gbd import ARTIFACT_FOLDER
@@ -13,7 +14,8 @@ from vivarium_cluster_tools.psimulate.utilities import get_drmaa
 drmaa = get_drmaa()
 
 HYPERTENSION_THRESHOLD = 140
-HDF_KEY = 'proportion_hypertensive'
+HYPERTENSION_HDF_KEY = 'proportion_hypertensive'
+HYPERTENSION_DATA_FOLDER = Path(ARTIFACT_FOLDER / f'vivarium_dcpn_hypertension_mgt/proportion_hypertensive/')
 
 
 def prep_weights(art):
@@ -56,11 +58,11 @@ def aggregate(out_dir, location):
     draw_dir = out_dir / location
     draws = []
     for f in draw_dir.iterdir():
-        draws.append(pd.read_hdf(f, HDF_KEY))
+        draws.append(pd.read_hdf(f, HYPERTENSION_HDF_KEY))
         f.unlink()
 
     data = pd.concat(draws, axis=1)
-    data.to_hdf(out_dir / f'{location}.hdf', HDF_KEY)
+    data.to_hdf(out_dir / f'{location}.hdf', HYPERTENSION_HDF_KEY)
     draw_dir.rmdir()
 
 
@@ -77,7 +79,7 @@ def main():
 
         file_path = out_dir / f'{location}/{draw}.hdf'
 
-        prop_hypertensive.to_hdf(file_path, HDF_KEY)
+        prop_hypertensive.to_hdf(file_path, HYPERTENSION_HDF_KEY)
 
     elif task_type == 'aggregate':
         aggregate(out_dir, location)

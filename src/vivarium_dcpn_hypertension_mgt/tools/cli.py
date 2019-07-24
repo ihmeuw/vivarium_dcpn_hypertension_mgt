@@ -75,7 +75,9 @@ def pcalculate_proportion_hypertensive(location):
     to a single hdf file saved in the central vivarium artifact store as
     ``proportion_hypertensive/location.hdf``
 
-    LOCATION should be
+    LOCATION should be specified as all lower-case, with underscores replacing
+    spaces (i.e., the same way the model artifacts are named),
+    e.g., russian_federation
     """
     num_draws = 1000
 
