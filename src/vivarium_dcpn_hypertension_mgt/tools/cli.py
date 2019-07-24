@@ -88,7 +88,7 @@ def pcalculate_proportion_hypertensive(location):
         jt.jobName = f'{location}_prop_hypertensive_draw'
 
         draw_jids = s.runBulkJobs(jt, 1, num_draws, 1)
-        draw_jid_base = draw_jids[0].split('.')
+        draw_jid_base = draw_jids[0].split('.')[0]
 
         jt.nativeSpecification = f'-l m_mem_free=10G,fthread=1,h_rt=01:30:00 ' \
             f'-q all.q -P proj_cost_effect_dcpn -hold_jid {draw_jid_base}'
