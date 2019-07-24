@@ -1,13 +1,15 @@
 from bdb import BdbQuit
-import logging
+import sys
 from pathlib import Path
 
 import click
+import drmaa
+from loguru import logger
 
 from vivarium_gbd_access.gbd import ARTIFACT_FOLDER
 from vivarium_inputs.data_artifact import utilities
 from .utilities import patch_external_data, build_and_patch
-from .proportion_hypertensive import calc_parallel
+from . import proportion_hypertensive
 
 
 @click.command()
@@ -41,7 +43,7 @@ def build_hypertension_artifact(model_specification, append, verbose, debugger):
     except (BdbQuit, KeyboardInterrupt):
         raise
     except Exception as e:
-        logging.exception("Uncaught exception: %s", e)
+        logger.exception("Uncaught exception: %s", e)
         if debugger:
             import pdb
             import traceback
@@ -68,4 +70,27 @@ def update_external_data_artifacts():
 @click.command()
 @click.argument('location')
 def calculate_proportion_hypertensive(location):
-    calc_parallel(location)
+    num_draws = 1000
+
+    output_path = Path(ARTIFACT_FOLDER / f'vivarium_dcpn_hypertension_mgt/proportion_hypertensive/{location}')
+    output_path.mkdir(parents=True)
+
+    with drmaa.Session() as s:
+        jt = s.createJobTemplate()
+        jt.remoteCommand = sys.executable
+        jt.nativeSpecification = '-l m_mem_free=1G,fthread=1,h_rt=00:30:00 -q all.q -P proj_cost_effect_dcpn'
+        jt.args = [proportion_hypertensive.__file__, location, 'draw']
+        jt.jobName = f'{location}_prop_hypertensive_draw'
+
+        draw_jids = s.runBulkJobs(jt, 1, num_draws, 1)
+        draw_jid_base = draw_jids[0].split('.')
+
+        jt.nativeSpecification = f'-l m_mem_free=10G,fthread=1,h_rt=01:30:00 ' \
+            f'-q all.q -P proj_cost_effect_dcpn -hold_jid {draw_jid_base}'
+        jt.args = [proportion_hypertensive.__file__, location, 'aggregate']
+        jt.jobName = f'{location}_prop_hypertensive_aggregate'
+
+        agg_jid = s.runJob(jt)
+
+        logger.info(f'Draws for {location} have been submitted with jid {draw_jid_base}. '
+                    f'They will be aggregated by jid {agg_jid}.')

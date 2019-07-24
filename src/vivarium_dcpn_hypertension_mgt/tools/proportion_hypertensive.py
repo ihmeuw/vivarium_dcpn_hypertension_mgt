@@ -52,31 +52,6 @@ def calc_hypertensive(location, draw):
     return props
 
 
-def calc_parallel(location):
-    output_path = Path(ARTIFACT_FOLDER / f'vivarium_dcpn_hypertension_mgt/proportion_hypertensive/{location}')
-    output_path.mkdir(parents=True)
-
-    with drmaa.Session() as s:
-        jt = s.createJobTemplate()
-        jt.remoteCommand = sys.executable
-        jt.nativeSpecification = '-l m_mem_free=1G,fthread=1,h_rt=00:30:00 -q all.q -P proj_cost_effect_dcpn'
-        jt.args = [__file__, location, 'draw']
-        jt.jobName = f'{location}_prop_hypertensive_draw'
-
-        draw_jids = s.runBulkJobs(jt, 1, 1000, 1)
-        draw_jid_base = draw_jids[0].split('.')
-
-        jt.nativeSpecification = f'-l m_mem_free=10G,fthread=1,h_rt=01:30:00 ' \
-            f'-q all.q -P proj_cost_effect_dcpn -hold_jid {draw_jid_base}'
-        jt.args = [__file__, location, 'aggregate']
-        jt.jobName = f'{location}_prop_hypertensive_aggregate'
-
-        agg_jid = s.runJob(jt)
-
-        logger.info(f'Draws for {location} have been submitted with jid {draw_jid_base}. '
-                    f'They will be aggregated by jid {agg_jid}.')
-
-
 def aggregate(out_dir, location):
     draw_dir = out_dir / location
     draws = []
