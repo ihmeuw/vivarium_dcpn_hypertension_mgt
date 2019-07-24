@@ -8,9 +8,12 @@ from risk_distributions import EnsembleDistribution
 from vivarium_gbd_access.gbd import ARTIFACT_FOLDER
 from vivarium_public_health.dataset_manager import Artifact
 from vivarium_public_health.risks.data_transformations import pivot_categorical
-from vivarium_cluster_tools.psimulate.utilities import get_drmaa
 
-drmaa = get_drmaa()
+try:
+    import drmaa
+except (RuntimeError, OSError):
+    os.environ['DRMAA_LIBRARY_PATH'] = '/opt/sge/lib/lx-amd64/libdrmaa.so'
+    import drmaa
 
 HYPERTENSION_THRESHOLD = 140
 HDF_KEY = 'proportion_hypertensive'
