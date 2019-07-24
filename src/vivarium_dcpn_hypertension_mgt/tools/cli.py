@@ -69,7 +69,12 @@ def update_external_data_artifacts():
 
 @click.command()
 @click.argument('location')
-def calculate_proportion_hypertensive(location):
+def pcalculate_proportion_hypertensive(location):
+    """Calculate 1000 draws of the proportion of the population that has a SBP
+    above the hypertensive threshold (SBP of 140) in parallel and aggregate
+    to a single hdf file saved in the central vivarium artifact store as
+    ``proportion_hypertensive/location.hdf``
+    """
     num_draws = 1000
 
     output_path = Path(ARTIFACT_FOLDER / f'vivarium_dcpn_hypertension_mgt/proportion_hypertensive/{location}')

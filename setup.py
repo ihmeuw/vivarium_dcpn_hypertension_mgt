@@ -62,6 +62,7 @@ if __name__ == "__main__":
             [console_scripts]
             build_hypertension_artifact=vivarium_dcpn_hypertension_mgt.tools.cli:build_hypertension_artifact
             update_external_data_artifacts=vivarium_dcpn_hypertension_mgt.tools.cli:update_external_data_artifacts
+            pcalculate_proportion_hypertensive=vivarium_dcpn_hypertension_mgt.tools.cli:pcalculate_proportion_hypertensive
         ''',
 
         zip_safe=False,
