@@ -7,6 +7,7 @@ import click
 from vivarium_gbd_access.gbd import ARTIFACT_FOLDER
 from vivarium_inputs.data_artifact import utilities
 from .utilities import patch_external_data, build_and_patch
+from .proportion_hypertensive import calc_parallel
 
 
 @click.command()
@@ -64,4 +65,7 @@ def update_external_data_artifacts():
         patch_external_data(f)
 
 
-
+@click.command()
+@click.argument('location')
+def calculate_proportion_hypertensive(location):
+    calc_parallel(location)

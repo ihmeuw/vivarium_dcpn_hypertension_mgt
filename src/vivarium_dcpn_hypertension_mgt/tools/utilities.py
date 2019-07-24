@@ -4,15 +4,14 @@ import pandas as pd
 
 from loguru import logger
 
-from risk_distributions import Normal
+from risk_distributions import Normal, EnsembleDistribution
 from vivarium_inputs.data_artifact.cli import main as build_artifact
 from vivarium_inputs.utilities import reshape
 from vivarium_public_health.dataset_manager import Artifact
 
+
 DRAW_COLUMNS = [f'draw_{i}' for i in range(1000)]
-
 CI_WIDTH_MAP = {99: 2.58, 95: 1.96, 90: 1.65, 68: 1}
-
 RANDOM_SEED = 123456
 
 TRANSFORMATION_SPECIFICATION = {
@@ -37,8 +36,7 @@ TRANSFORMATION_SPECIFICATION = {
 }
 
 
-def patch_external_data(artifact_path: Path):
-    art = Artifact(str(artifact_path))
+def patch_external_data(art):
     location = art.load('metadata.locations')[0]
     logger.info(f'Beginning external data for {location}.')
 
@@ -56,6 +54,14 @@ def patch_external_data(artifact_path: Path):
             else:
                 art.write(k, data)
 
+
+# def patch_proportion_hypertensive(art):
+#     data = get_proportion_hypertensive(art)
+#     key = 'risk_factor.high_systolic_blood_pressure.proportion_hypertensive'
+#     if key in art:
+#         art.replace(key, data)
+#     else:
+#         art.write(key, data)
 
 def prep_external_data(data_file, location):
     data_file = Path(data_file)
@@ -164,4 +170,7 @@ def get_external_data_files():
 def build_and_patch(model_spec, output_root, append):
     build_artifact(str(model_spec), output_root, None, append)
     artifact_path = output_root / f'{model_spec.stem}.hdf'
-    patch_external_data(artifact_path)
+    art = Artifact(str(artifact_path))
+    patch_external_data(art)
+
+
