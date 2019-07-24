@@ -74,10 +74,12 @@ def pcalculate_proportion_hypertensive(location):
     above the hypertensive threshold (SBP of 140) in parallel and aggregate
     to a single hdf file saved in the central vivarium artifact store as
     ``proportion_hypertensive/location.hdf``
+
+    LOCATION should be
     """
     num_draws = 1000
 
-    output_path = Path(ARTIFACT_FOLDER / f'vivarium_dcpn_hypertension_mgt/proportion_hypertensive/{location}')
+    output_path = proportion_hypertensive.HYPERTENSION_DATA_FOLDER / location
     output_path.mkdir(parents=True)
 
     with drmaa.Session() as s:
@@ -90,7 +92,7 @@ def pcalculate_proportion_hypertensive(location):
         draw_jids = s.runBulkJobs(jt, 1, num_draws, 1)
         draw_jid_base = draw_jids[0].split('.')[0]
 
-        jt.nativeSpecification = f'-l m_mem_free=10G,fthread=1,h_rt=01:30:00 ' \
+        jt.nativeSpecification = f'-l m_mem_free=10G,fthread=1,h_rt=00:15:00 ' \
             f'-q all.q -P proj_cost_effect -hold_jid {draw_jid_base}'
         jt.args = [proportion_hypertensive.__file__, location, 'aggregate']
         jt.jobName = f'{location}_prop_hypertensive_aggregate'
