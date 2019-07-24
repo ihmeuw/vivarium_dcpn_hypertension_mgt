@@ -83,7 +83,7 @@ def pcalculate_proportion_hypertensive(location):
     with drmaa.Session() as s:
         jt = s.createJobTemplate()
         jt.remoteCommand = sys.executable
-        jt.nativeSpecification = '-l m_mem_free=1G,fthread=1,h_rt=00:30:00 -q all.q -P proj_cost_effect_dcpn'
+        jt.nativeSpecification = '-l m_mem_free=1G,fthread=1,h_rt=00:30:00 -q all.q -P proj_cost_effect'
         jt.args = [proportion_hypertensive.__file__, location, 'draw']
         jt.jobName = f'{location}_prop_hypertensive_draw'
 
@@ -91,7 +91,7 @@ def pcalculate_proportion_hypertensive(location):
         draw_jid_base = draw_jids[0].split('.')[0]
 
         jt.nativeSpecification = f'-l m_mem_free=10G,fthread=1,h_rt=01:30:00 ' \
-            f'-q all.q -P proj_cost_effect_dcpn -hold_jid {draw_jid_base}'
+            f'-q all.q -P proj_cost_effect -hold_jid {draw_jid_base}'
         jt.args = [proportion_hypertensive.__file__, location, 'aggregate']
         jt.jobName = f'{location}_prop_hypertensive_aggregate'
 
