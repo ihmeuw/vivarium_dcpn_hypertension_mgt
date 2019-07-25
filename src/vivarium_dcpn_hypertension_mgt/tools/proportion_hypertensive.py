@@ -69,13 +69,13 @@ def aggregate(out_dir, location):
     draw_dir.rmdir()
 
 
-def prep_input_data(out_dir, location):
+def prep_input_data(loc_dir, location):
     """Pull the data from GBD once and stick it into an artifact that we can
     just read individual draws out of instead of having to go pull through
     inputs every time"""
 
     logger.info('Creating data artifact with distribution data.')
-    data_path = out_dir / location / 'data.hdf'
+    data_path = loc_dir / 'data.hdf'
     # FIXME: this will technically not work for Cote d'Ivoire because it will
     #  capitalize the d but until we need that, I'm not going to do something fancy to make it work
     art_loc = location.replace('_', ' ').title().replace('-', "'")
