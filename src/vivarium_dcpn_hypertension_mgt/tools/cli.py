@@ -86,6 +86,7 @@ def pcalculate_proportion_hypertensive(location):
 
     proportion_hypertensive.prep_input_data(output_path, location)
 
+    logger.info('Submitting jobs.')
     with drmaa.Session() as s:
         jt = s.createJobTemplate()
         jt.remoteCommand = sys.executable
