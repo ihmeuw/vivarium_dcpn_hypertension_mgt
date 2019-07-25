@@ -3,13 +3,15 @@ import sys
 from pathlib import Path
 
 import click
-import drmaa
 from loguru import logger
 
 from vivarium_gbd_access.gbd import ARTIFACT_FOLDER
 from vivarium_inputs.data_artifact import utilities
+from vivarium_cluster_tools.psimulate.utilities import get_drmaa
 from .utilities import patch_external_data, build_and_patch
 from . import proportion_hypertensive
+
+drmaa = get_drmaa()
 
 
 @click.command()
@@ -80,6 +82,12 @@ def pcalculate_proportion_hypertensive(location):
     e.g., russian_federation
     """
     num_draws = 1000
+
+    data_file = (proportion_hypertensive.HYPERTENSION_DATA_FOLDER / f'{location}.hdf')
+    if data_file.exists():
+        # I don't want to write over b/c of issue where writing to same hdf key makes the files huge
+        logger.info(f'Existing data found for {location}. Removing and re-calculating.')
+        data_file.unlink()
 
     output_path = proportion_hypertensive.HYPERTENSION_DATA_FOLDER / location
     output_path.mkdir(parents=True)

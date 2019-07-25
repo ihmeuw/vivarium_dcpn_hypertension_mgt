@@ -10,10 +10,8 @@ from risk_distributions import EnsembleDistribution
 from vivarium_gbd_access.gbd import ARTIFACT_FOLDER
 from vivarium_public_health.dataset_manager import Artifact, EntityKey
 from vivarium_public_health.risks.data_transformations import pivot_categorical
-from vivarium_cluster_tools.psimulate.utilities import get_drmaa
 from vivarium_inputs.data_artifact.builder import create_new_artifact, _worker
 
-drmaa = get_drmaa()
 
 HYPERTENSION_THRESHOLD = 140
 HYPERTENSION_HDF_KEY = 'proportion_above_hypertensive_threshold'
