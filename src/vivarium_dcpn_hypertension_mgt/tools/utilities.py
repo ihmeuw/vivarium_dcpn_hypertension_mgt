@@ -1,24 +1,61 @@
 from pathlib import Path
+import numpy as np
 import pandas as pd
+from scipy.stats import norm
 
+from loguru import logger
+
+from vivarium_inputs.data_artifact.cli import main as build_artifact
+from vivarium_inputs.utilities import reshape
 from vivarium_public_health.dataset_manager import Artifact
 
-CONFIDENCE_INTERVALS_TO_CONVERT = {
-    'baseline_treatment_coverage': ['treated_among_hypertensive', 'control_among_hypertensive', 'control_among_treated'],
-    'baseline_therapy_categories': ['percentage_among_treated'],
-    'baseline_treatment_profiles': ['percentage_among_therapy_category']
+DRAW_COLUMNS = [f'draw_{i}' for i in range(1000)]
+
+CI_WIDTH_MAP = {99: 2.58, 95: 1.96, 90: 1.65, 68: 1}
+
+RANDOM_SEED = 123456
+
+# used to map the measures that need draws and the columns to keep after creating draws for each external data source
+TRANSFORMATION_SPECIFICATION = {
+    'baseline_treatment_coverage': {
+        'measures': ['treated_among_hypertensive', 'control_among_treated'],
+        'columns': ['location', 'sex', 'age_group_start', 'age_group_end',
+                    'measure', 'hypertension_threshold'] + DRAW_COLUMNS,
+    },
+    'baseline_therapy_categories': {
+        'measures': ['percentage_among_treated'],
+        'columns': ['location', 'therapy_category', 'measure'] + DRAW_COLUMNS
+    },
+    'baseline_treatment_profiles': {
+        'measures': ['percentage_among_therapy_category'],
+        'columns': ['location', 'hypertension_drug_category', 'DU', 'BB',
+                    'ACEI', 'ARB', 'CCB', 'other', 'measure'] + DRAW_COLUMNS
+    },
+    'drug_efficacy': {
+        'measures': ['half_dose_efficacy_mean', 'standard_dose_efficacy_mean', 'double_dose_efficacy_mean'],
+        'columns': ['medication', 'sd_mean', 'dosage'] + DRAW_COLUMNS
+    }
 }
 
 
-def patch_artifact(artifact_path: Path):
+def patch_external_data(artifact_path: Path):
     art = Artifact(str(artifact_path))
     location = art.load('metadata.locations')[0]
+    logger.info(f'Beginning external data for {location}.')
 
-    data_files = get_external_data_files()
-    for file in data_files:
-        data = prep_external_data(file, location)
-        name = file.stem
-        art.write(f'health_technology.hypertension_drugs.{name}', data)
+    external_data_files = get_external_data_files()
+    external_data_keys = [f'health_technology.hypertension_drugs.{f.stem}' for f in external_data_files]
+
+    for k, data_file in zip(external_data_keys, external_data_files):
+        data = prep_external_data(data_file, location)
+        if data.empty:
+            logger.warning(f'No data found for {k} in {location}. This may be '
+                           f'because external data has not yet been prepped for {location}.')
+        else:
+            if k in art:
+                art.replace(k, data)
+            else:
+                art.write(k, data)
 
 
 def prep_external_data(data_file, location):
@@ -32,6 +69,8 @@ def prep_external_data(data_file, location):
         data.sex = data.sex.apply(lambda s: s.strip())
         data = data[data.sex == 'Both']
 
+    data = transform_data(data_file.stem, data)
+
     if 'sex' in data and set(data.sex) == {'Both'}:  # duplicate for male, female
         male = data
         male.sex = 'Male'
@@ -39,28 +78,62 @@ def prep_external_data(data_file, location):
         female.sex = 'Female'
         data = pd.concat([male, female])
 
-    if data_file.stem in CONFIDENCE_INTERVALS_TO_CONVERT:
-        for k in CONFIDENCE_INTERVALS_TO_CONVERT[data_file.stem]:
-            data = convert_confidence_interval(data, k)
+    return reshape(data)
 
-    if data_file.stem == 'baseline_treatment_profiles':
-        data = collapse_other_drug_profiles(data)
+
+def transform_data(data_type, data):
+    spec = TRANSFORMATION_SPECIFICATION[data_type]
+    measure_data = []
+
+    for m in spec['measures']:
+        df = clean_data(data, m)
+        measure_data.append(create_draw_level_data(df, m, spec['columns']))
+
+    return pd.concat(measure_data)
+
+
+def clean_data(data, measure):
+    data['measure'] = measure
+    measure_columns = {c: c.replace(f'{measure}_', '') for c in data if measure in c}
+
+    if 'efficacy' in measure:
+        measure_columns[f'{"_".join(measure.split("_")[:3])}_sd_mean'] = 'sd_mean'
+        measure_columns['name'] = 'medication'
+        measure_columns['measure'] = 'dosage'
+        data.measure = data.measure.apply(lambda s: s.split('_')[0])
+
+    data = data.rename(columns=measure_columns)
+
+    # FIXME: shouldn't default like this but this is just a temp measure until I get the actual levels from MW
+    if 'uncertainty_level' not in data:
+        data['uncertainty_level'] = 95
+
     return data
 
 
-def convert_confidence_interval(data, key):
-    data[f'{key}_sd'] = 0.0
-    no_ci_to_convert = (data[f'{key}_uncertainty_level'].isnull())
-    no_ci = data[no_ci_to_convert]
+def create_draw_level_data(data, measure, columns_to_keep):
+    no_ci_to_convert = data.uncertainty_level.isnull()
 
-    ci = data[~no_ci_to_convert]
-    ci_width_map = {99: 2.58, 95: 1.96, 90: 1.65, 68: 1}
+    to_draw = data[~no_ci_to_convert]
+    ci_widths = to_draw.uncertainty_level.map(lambda l: CI_WIDTH_MAP.get(l, 0) * 2)
+    data.loc[~no_ci_to_convert, 'sd'] = (to_draw['ub'] - to_draw['lb']) / ci_widths
 
-    ci_widths = ci[f'{key}_uncertainty_level'].map(lambda l: ci_width_map[l] * 2)
-    ci[f'{key}_sd'] = (ci[f'{key}_ub'] - ci[f'{key}_lb']) / ci_widths
+    if measure == 'percentage_among_therapy_category':
+        data = collapse_other_drug_profiles(data)
 
-    data = pd.concat([ci, no_ci])
-    return data.drop(columns=[f'{key}_lb', f'{key}_ub', f'{key}_uncertainty_level'])
+    draws = pd.DataFrame(data=np.transpose(np.tile(data['mean'].values, (1000, 1))),
+                         columns=DRAW_COLUMNS, index=data.index)
+
+    data = pd.concat([data, draws], axis=1)
+
+    np.random.seed(RANDOM_SEED)
+    d = np.random.random(1000)
+    for row in data.loc[~no_ci_to_convert].iterrows():
+        dist = norm(loc=row[1]['mean'], scale=row[1]['sd'])
+        draws = dist.ppf(d)
+        data.loc[row[0], DRAW_COLUMNS] = draws
+
+    return data.filter(columns_to_keep)
 
 
 def collapse_other_drug_profiles(data):
@@ -79,10 +152,8 @@ def collapse_other_drug_profiles(data):
 
         collapsed_profile = category_profiles.iloc[[0]]
         collapsed_profile['drug_class'] = 'other'
-        collapsed_profile['percentage_among_therapy_category_mean'] = \
-            category_profiles.percentage_among_therapy_category_mean.sum()
-        collapsed_profile['percentage_among_therapy_category_sd'] = \
-            (category_profiles.percentage_among_therapy_category_sd ** 2).sum()
+        collapsed_profile['mean'] = category_profiles['mean'].sum()
+        collapsed_profile['sd'] = ((category_profiles.sd ** 2).sum()) ** 0.5
 
         prepped_profiles.append(collapsed_profile)
 
@@ -92,3 +163,9 @@ def collapse_other_drug_profiles(data):
 def get_external_data_files():
     external_data_path = Path(__file__).parent.parent / 'external_data'
     return [f for f in external_data_path.iterdir() if f.suffix == '.csv']
+
+
+def build_and_patch(model_spec, output_root, append):
+    build_artifact(str(model_spec), output_root, None, append)
+    artifact_path = output_root / f'{model_spec.stem}.hdf'
+    patch_external_data(artifact_path)
