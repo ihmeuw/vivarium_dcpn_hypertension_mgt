@@ -31,7 +31,7 @@ def prep_weights(art):
 
 
 def calc_hypertensive(location, draw):
-    art_path = ARTIFACT_FOLDER / 'vivarium_dcpn_hypertension_mgt/{location}/data.hdf'
+    art_path = HYPERTENSION_DATA_FOLDER / f'{location}/data.hdf'
     art = Artifact(str(art_path), filter_terms=[f'draw=={draw}'])
 
     # I can drop indices and know that the means/sds/weights will be aligned b/c we sort the data in vivarium_inputs
