@@ -83,6 +83,7 @@ def prep_input_data(out_dir, location):
     for measure in ['exposure', 'exposure_standard_deviation', 'exposure_distribution_weights']:
         entity_key = EntityKey(f'risk_factor.high_systolic_blood_pressure.{measure}')
         _worker(entity_key, art_loc, [], data_art)
+    logger.info('Distribution data prepped.')
 
 
 def main():
