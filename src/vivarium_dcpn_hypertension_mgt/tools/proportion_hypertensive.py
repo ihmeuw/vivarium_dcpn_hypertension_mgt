@@ -45,7 +45,7 @@ def calc_hypertensive(location, draw):
     threshold = pd.Series(HYPERTENSION_THRESHOLD, index=mean.index)
 
     dist = EnsembleDistribution(weights=weights, mean=mean[f'draw_{draw}'], sd=sd[f'draw_{draw}'])
-    props = 1 - dist.cdf(threshold).fillna(0)  # we want the proportion above the threshold
+    props = (1 - dist.cdf(threshold)).fillna(0)  # we want the proportion above the threshold
 
     props.index = demographic_index
     props.name = f'draw_{draw}'
