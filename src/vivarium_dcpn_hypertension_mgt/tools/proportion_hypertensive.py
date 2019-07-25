@@ -75,7 +75,7 @@ def prep_input_data(loc_dir, location):
     inputs every time"""
 
     logger.info('Creating data artifact with distribution data.')
-    data_path = loc_dir / 'data.hdf'
+    data_path = str(loc_dir / 'data.hdf')
     # FIXME: this will technically not work for Cote d'Ivoire because it will
     #  capitalize the d but until we need that, I'm not going to do something fancy to make it work
     art_loc = location.replace('_', ' ').title().replace('-', "'")
