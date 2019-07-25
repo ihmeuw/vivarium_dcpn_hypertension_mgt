@@ -174,7 +174,7 @@ def build_and_patch(model_spec, output_root, append):
 def patch_proportion_hypertensive(art):
     location = art.load('metadata.locations')[0].replace(' ', '_').replace("'", "-").lower()
     data = pd.read_hdf(HYPERTENSION_DATA_FOLDER / f'{location}.hdf', HYPERTENSION_HDF_KEY)
-    key = 'risk_factor.high_systolic_blood_pressure.proportion_hypertensive'
+    key = f'risk_factor.high_systolic_blood_pressure.{HYPERTENSION_HDF_KEY}'
     if key in art:
         art.replace(key, data)
     else:

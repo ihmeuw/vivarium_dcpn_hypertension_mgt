@@ -14,7 +14,7 @@ from vivarium_cluster_tools.psimulate.utilities import get_drmaa
 drmaa = get_drmaa()
 
 HYPERTENSION_THRESHOLD = 140
-HYPERTENSION_HDF_KEY = 'proportion_hypertensive'
+HYPERTENSION_HDF_KEY = 'proportion_above_hypertensive_threshold'
 HYPERTENSION_DATA_FOLDER = Path(ARTIFACT_FOLDER / f'vivarium_dcpn_hypertension_mgt/proportion_hypertensive/')
 
 
@@ -45,7 +45,7 @@ def calc_hypertensive(location, draw):
     threshold = pd.Series(HYPERTENSION_THRESHOLD, index=mean.index)
 
     dist = EnsembleDistribution(weights=weights, mean=mean[f'draw_{draw}'], sd=sd[f'draw_{draw}'])
-    props = dist.cdf(threshold).fillna(0)
+    props = 1 - dist.cdf(threshold).fillna(0)  # we want the proportion above the threshold
 
     props.index = demographic_index
     props.name = f'draw_{draw}'
