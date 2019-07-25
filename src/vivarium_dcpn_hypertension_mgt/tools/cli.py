@@ -84,6 +84,8 @@ def pcalculate_proportion_hypertensive(location):
     output_path = proportion_hypertensive.HYPERTENSION_DATA_FOLDER / location
     output_path.mkdir(parents=True)
 
+    proportion_hypertensive.prep_input_data(output_path, location)
+
     with drmaa.Session() as s:
         jt = s.createJobTemplate()
         jt.remoteCommand = sys.executable
