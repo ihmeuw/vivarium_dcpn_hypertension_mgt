@@ -1,10 +1,10 @@
 from pathlib import Path
 import numpy as np
 import pandas as pd
+from scipy.stats import norm
 
 from loguru import logger
 
-from risk_distributions import Normal
 from vivarium_inputs.data_artifact.cli import main as build_artifact
 from vivarium_inputs.utilities import reshape
 from vivarium_public_health.dataset_manager import Artifact
@@ -15,6 +15,7 @@ CI_WIDTH_MAP = {99: 2.58, 95: 1.96, 90: 1.65, 68: 1}
 
 RANDOM_SEED = 123456
 
+# used to map the measures that need draws and the columns to keep after creating draws for each external data source
 TRANSFORMATION_SPECIFICATION = {
     'baseline_treatment_coverage': {
         'measures': ['treated_among_hypertensive', 'control_among_treated'],
@@ -85,12 +86,13 @@ def transform_data(data_type, data):
     measure_data = []
 
     for m in spec['measures']:
-        measure_data.append(create_draw_level_data(data, m, spec['columns']))
+        df = clean_data(data, m)
+        measure_data.append(create_draw_level_data(df, m, spec['columns']))
 
     return pd.concat(measure_data)
 
 
-def create_draw_level_data(data, measure, columns_to_keep):
+def clean_data(data, measure):
     data['measure'] = measure
     measure_columns = {c: c.replace(f'{measure}_', '') for c in data if measure in c}
 
@@ -106,12 +108,14 @@ def create_draw_level_data(data, measure, columns_to_keep):
     if 'uncertainty_level' not in data:
         data['uncertainty_level'] = 95
 
+    return data
+
+
+def create_draw_level_data(data, measure, columns_to_keep):
     no_ci_to_convert = data.uncertainty_level.isnull()
 
     to_draw = data[~no_ci_to_convert]
-
     ci_widths = to_draw.uncertainty_level.map(lambda l: CI_WIDTH_MAP.get(l, 0) * 2)
-
     data.loc[~no_ci_to_convert, 'sd'] = (to_draw['ub'] - to_draw['lb']) / ci_widths
 
     if measure == 'percentage_among_therapy_category':
@@ -125,7 +129,7 @@ def create_draw_level_data(data, measure, columns_to_keep):
     np.random.seed(RANDOM_SEED)
     d = np.random.random(1000)
     for row in data.loc[~no_ci_to_convert].iterrows():
-        dist = Normal(mean=row[1]['mean'], sd=row[1]['sd'])
+        dist = norm(loc=row[1]['mean'], scale=row[1]['sd'])
         draws = dist.ppf(d)
         data.loc[row[0], DRAW_COLUMNS] = draws
 
