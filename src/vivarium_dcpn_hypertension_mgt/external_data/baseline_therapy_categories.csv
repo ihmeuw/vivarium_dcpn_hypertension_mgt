@@ -1,0 +1,16 @@
+location,therapy_category,percentage_among_treated_mean,percentage_among_treated_lb,percentage_among_treated_ub,percentage_among_treated_uncertainty_level
+China,mono,86.2,85.7,86.6,95
+China,dual,13,12.6,13.4,95
+China,triple,0.8,0.7,0.9,95
+Russian Federation,mono,25.0,,,
+Russian Federation,dual,58,,,
+Russian Federation,triple,17,,,
+Malaysia ,mono,53.1,,,
+Malaysia ,dual,31.6,,,
+Malaysia ,triple,12.2,,,
+Malaysia ,quad,2.8,,,
+India ,,,,,
+Nigeria ,mono,5.50,,,
+Nigeria ,dual,49.08,,,
+Nigeria ,triple,36.15,,,
+Nigeria ,quad,9.27,,,

@@ -20,7 +20,8 @@ if __name__ == "__main__":
         'vivarium==0.8.22',
         'vivarium_public_health==0.9.16',
         'vivarium_cluster_tools==1.0.14',
-        'vivarium_inputs[data]==3.0.1',  
+        'vivarium_inputs[data]==3.0.1',
+        'risk_distributions==2.0.1'
         
         # These are pinned for internal dependencies on IHME libraries
         'numpy<=1.15.4',
@@ -34,6 +35,8 @@ if __name__ == "__main__":
         'jupyterlab',
         'pytest',
         'pytest-mock',
+        'click',
+        'loguru',
     ]
 
     setup(
@@ -53,6 +56,12 @@ if __name__ == "__main__":
         include_package_data=True,
 
         install_requires=install_requirements,
+
+        entry_points='''
+            [console_scripts]
+            build_hypertension_artifact=vivarium_dcpn_hypertension_mgt.tools.cli:build_hypertension_artifact
+            update_external_data_artifacts=vivarium_dcpn_hypertension_mgt.tools.cli:update_external_data_artifacts
+        ''',
 
         zip_safe=False,
     )
