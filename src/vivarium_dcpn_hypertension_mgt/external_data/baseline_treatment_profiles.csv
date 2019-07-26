@@ -1,4 +1,4 @@
-location,hypertension_drug_category,drug_class,calcium_channel_blockers,thiazide_type_diuretics,ace_inhibitors,angiotensin_ii_blockers,beta_blockers,other,percentage_among_therapy_category_mean,percentage_among_therapy_category_lb,percentage_among_therapy_category_ub,percentage_among_therapy_category_uncertainty_level
+location,therapy_category,drug_class,calcium_channel_blockers,thiazide_type_diuretics,ace_inhibitors,angiotensin_ii_blockers,beta_blockers,other,percentage_among_therapy_category_mean,percentage_among_therapy_category_lb,percentage_among_therapy_category_ub,percentage_among_therapy_category_uncertainty_level
 China,mono,CCB full dose,2,0,0,0,0,0,49.80,49.20,50.50,95.00
 China,mono,Diuretics full dose,0,2,0,0,0,0,4.20,4.00,4.50,95.00
 China,mono,ARB ,0,0,0,1,0,0,23.50,22.90,24.00,95.00
