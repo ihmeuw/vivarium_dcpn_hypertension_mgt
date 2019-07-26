@@ -28,8 +28,9 @@ TRANSFORMATION_SPECIFICATION = {
     },
     'baseline_treatment_profiles': {
         'measures': ['percentage_among_therapy_category'],
-        'columns': ['location', 'therapy_category', 'DU', 'BB',
-                    'ACEI', 'ARB', 'CCB', 'other', 'measure'] + DRAW_COLUMNS
+        'columns': ['location', 'therapy_category', 'thiazide_type_diuretics',
+                    'beta_blockers', 'ace_inhibitors', 'angiotensin_ii_blockers',
+                    'calcium_channel_blockers', 'other', 'measure'] + DRAW_COLUMNS
     },
     'drug_efficacy': {
         'measures': ['half_dose_efficacy_mean', 'standard_dose_efficacy_mean', 'double_dose_efficacy_mean'],
