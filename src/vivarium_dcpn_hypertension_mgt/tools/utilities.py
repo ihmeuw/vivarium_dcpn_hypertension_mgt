@@ -48,7 +48,7 @@ def patch_external_data(artifact_path: Path):
 
     for k, data_file in zip(external_data_keys, external_data_files):
         data = prep_external_data(data_file, location)
-        if data.empty:
+        if data.empty and data.index.empty:
             logger.warning(f'No data found for {k} in {location}. This may be '
                            f'because external data has not yet been prepped for {location}.')
         else:
@@ -61,29 +61,37 @@ def patch_external_data(artifact_path: Path):
 def prep_external_data(data_file, location):
     data_file = Path(data_file)
     data = pd.read_csv(data_file)
-    if 'location' in data:
-        data.location = data.location.apply(lambda s: s.strip())  # some locs have trailing spaces so won't match
-        data = data[data.location == location]
-    if 'sex' in data and len(data.sex.unique()) == 3:
-        # we have both sex and age specific values - we are defaulting to using age specific for now
-        data.sex = data.sex.apply(lambda s: s.strip())
-        data = data[data.sex == 'Both']
 
-    data = transform_data(data_file.stem, data)
+    def prep(df):
+        if 'location' in df:
+            df.location = df.location.apply(lambda s: s.strip())  # some locs have trailing spaces so won't match
+            df = df[df.location == location]
+        if 'sex' in df and len(df.sex.unique()) == 3:
+            # we have both sex and age specific values - we are defaulting to using age specific for now
+            df.sex = df.sex.apply(lambda s: s.strip())
+            df = df[df.sex == 'Both']
 
-    if 'sex' in data and set(data.sex) == {'Both'}:  # duplicate for male, female
-        male = data
-        male.sex = 'Male'
-        female = data.copy()
-        female.sex = 'Female'
-        data = pd.concat([male, female])
+        df = transform_data(data_file.stem, df)
+
+        if 'sex' in df and set(df.sex) == {'Both'}:  # duplicate for male, female
+            male = df
+            male.sex = 'Male'
+            female = df.copy()
+            female.sex = 'Female'
+            df = pd.concat([male, female])
+        return df
+
+    if data_file.stem == 'guideline_ramp_conditions':  # we need to prep (e.g., normalize over sex) for each ramp
+        data = data.groupby(by=['guideline', 'ramp_name']).apply(prep).reset_index(drop=True)
+    else:
+        data = prep(data)
 
     return reshape(data)
 
 
 def transform_data(data_type, data):
-    spec = TRANSFORMATION_SPECIFICATION[data_type]
-    measure_data = []
+    spec = TRANSFORMATION_SPECIFICATION.get(data_type, {'measures': [], 'columns': []})
+    measure_data = [] if spec['measures'] else [data]
 
     for m in spec['measures']:
         df = clean_data(data, m)

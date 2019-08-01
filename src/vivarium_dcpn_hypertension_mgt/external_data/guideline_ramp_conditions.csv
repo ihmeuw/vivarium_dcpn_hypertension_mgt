@@ -1,0 +1,9 @@
+sex,age_group_start,age_group_end,systolic_blood_pressure_start,systolic_blood_pressure_end,smoking,bmi,diabetes,previous_ihd,cvd_risk_n,guideline,ramp_name
+Male,55,80,140,160,,,,,>=1,china,mono_starter
+Female,65,80,140,160,,,,,>=1,china,mono_starter
+Both,0,80,160,180,,,,,>=0,china,combo_starter
+Both,80,125,150,200,,,,,>=0,china,elderly
+Male,55,125,130,140,,,,,>=1,aha,mono_starter
+Female,65,125,130,140,,,,,>=1,aha,mono_starter
+Both,0,125,140,180,,,,,>=0,aha,combo_starter
+Both,0,125,140,200,,,,,>=1,who,mono_starter

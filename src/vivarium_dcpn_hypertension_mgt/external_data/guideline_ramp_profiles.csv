@@ -1,0 +1,37 @@
+guideline,ramp_name,ramp_position,ace_inhibitors,angiotensin_ii_blockers,calcium_channel_blockers,thiazide_type_diuretics,beta_blockers
+china,mono_starter,1,0,0,1,0,0
+china,mono_starter,2,0,0,2,0,0
+china,mono_starter,3,0,0,2,1,0
+china,mono_starter,4,0,0,2,2,0
+china,mono_starter,5,0,1,2,2,0
+china,mono_starter,6,0,2,2,2,0
+china,combo_starter,1,0,0,1,1,0
+china,combo_starter,2,0,0,2,1,0
+china,combo_starter,3,0,0,2,2,0
+china,combo_starter,4,0,1,2,2,0
+china,combo_starter,5,0,2,2,2,0
+china,elderly,1,0,0,0.5,0.5,0
+china,elderly,2,0,0,1,0.5,0
+china,elderly,3,0,0,1,1,0
+china,elderly,4,0,0.5,1,1,0
+china,elderly,5,0,0.5,2,1,0
+china,elderly,6,0,1,2,1,0
+china,elderly,7,0,1,2,2,0
+china,elderly,8,0,2,2,2,0
+who ,mono_starter,1,0,0,1,0,0
+who ,mono_starter,2,0,0,2,0,0
+who ,mono_starter,3,0,0,2,1,0
+who ,mono_starter,4,0,0,2,2,0
+who ,mono_starter,5,0,1,2,2,0
+who ,mono_starter,6,0,2,2,2,0
+aha,mono_starter,1,0,0,1,0,0
+aha,mono_starter,2,0,0,2,0,0
+aha,mono_starter,3,0,0,2,1,0
+aha,mono_starter,4,0,0,2,2,0
+aha,mono_starter,5,0,1,2,2,0
+aha,mono_starter,6,0,2,2,2,0
+aha,combo_starter,1,0,0,1,1,0
+aha,combo_starter,2,0,0,2,1,0
+aha,combo_starter,3,0,0,2,2,0
+aha,combo_starter,4,0,1,2,2,0
+aha,combo_starter,5,0,2,2,2,0
