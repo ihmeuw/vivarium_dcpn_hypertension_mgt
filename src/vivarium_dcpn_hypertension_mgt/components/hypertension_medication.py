@@ -31,6 +31,8 @@ class FilterTransition(Transition):
     def __init__(self, input_profile, output_profile, probability_func=lambda index: pd.Series(1, index=index),
                  filters: dict = None):
 
+        self.filters = filters if filters else dict()
+
         acceptable_filters = {'age', 'systolic_blood_pressure', 'sex'}
         extra_filters = set(filters.keys()).difference(acceptable_filters)
         if extra_filters:
@@ -39,8 +41,6 @@ class FilterTransition(Transition):
 
         # TODO: check that filters is in form: <filter_term>: {'start': <#>, 'end': <#>} for age/bp
         #  and "sex": {"Male" or "Female"} for sex
-
-        self.filters = filters if filters else dict()
 
         super().__init__(input_profile, output_profile, probability_func)
 
@@ -52,6 +52,9 @@ class FilterTransition(Transition):
         """Apply all filters (and-ed together) to index to determine who's
         eligible for this transition."""
         filtered_index = index
+
+        p = pd.Series(0, index=index)
+
         if 'age' in self.filters:
             age = self.population_view(index).age
             in_age_index = ((age >= self.filters['age']['start'])
@@ -67,4 +70,5 @@ class FilterTransition(Transition):
                         & sbp < self.filters['systolic_blood_pressure']['end']).index
             filtered_index = filtered_index.intersection(bp_index)
 
-        super().probability(filtered_index)
+        p.loc[filtered_index] = super().probability(filtered_index)
+        return p
