@@ -1,6 +1,6 @@
 import pandas as pd
 
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from vivarium.framework.state_machine import State, Transition
 
@@ -91,23 +91,25 @@ class FilterDomain:
     def get_subdomain(self, sub_dimensions: dict):
         subdomain = FilterDomain(sub_dimensions)
         if subdomain not in self:
-            raise ValueError('Subdomains must be contained within the parent domain.')
+            raise ValueError('Sub-domains must be contained within the parent domain.')
 
         subdomain.population_view = self.population_view
         subdomain.blood_pressure = self.blood_pressure
-        # TODO: share cvd risk num pipeline
+        # TODO: pass on cvd risk num pipeline
 
         return subdomain
 
     def is_covered(self, sub_domains: List):
-
+        subs = []
+        for s in subs:
+            df_s = pd.DataFrame()
 
     @staticmethod
     def get_dimensions(dimensions):
         # for ranges: start is always inclusive, end is always exclusive
         default_dimensions = {'age': {'start': 0, 'end': 125},
                               'systolic_blood_pressure': {'start': 60, 'end': 300},
-                              'cvd_risk_number': {0, 4},
+                              'cvd_risk_number': {'start': 0, 'end': 4},
                               'sex': {'Male', 'Female'}}
 
         if dimensions:
@@ -125,3 +127,50 @@ class FilterDomain:
 
         return default_dimensions
 
+    def flatten_dimensions(self):
+        """Turns dictionary of dimensions into df of bins."""
+
+
+def check_subdomains_complete(sub_domains_data: pd.DataFrame, full_domain: dict):
+    """Verifies that sub-domains span full_domain in all dimensions with no
+    overlaps or gaps and do not exceed full_domain in any dimensions.
+
+    Based on the data completion check from ``vivarium.interpolation``"""
+    for d in full_domain.keys():
+        key_col = f'{d}_start' if d in FilterDomain.range_dimensions else d
+
+        other_dimensions = set(full_domain.keys()).difference({d})
+        sub_tables = sub_domains_data.groupby(list(other_dimensions))
+
+        n_d_total = len(set(sub_domains_data[key_col]))
+
+        for _, table in sub_tables:
+
+            if d in FilterDomain.range_dimensions:
+                dimension_data = table[[f'{d}_start', f'{d}_end']].copy().sort_values(by=f'{d}_start')
+                start = dimension_data[f'{d}_start'].reset_index(drop=True)
+                end = dimension_data[f'{d}_end'].reset_index(drop=True)
+
+                if start[0] != full_domain[d]['start'] or end[len(end) - 1] != full_domain[d]['end']:
+                    return False
+
+                if len(set(start)) < n_d_total:
+                    return False
+
+                if len(start) <= 1:
+                    continue
+
+                for i in range(1, len(start)):
+                    e = end[i - 1]
+                    s = start[i]
+
+                    if e > s or s == start[i - 1]:
+                        return False
+
+                    if e < s:
+                        return False
+            else:  # set dimension
+                if set(table[key_col]) != full_domain[d]:
+                    return False
+
+    return True
