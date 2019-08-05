@@ -21,7 +21,7 @@ if __name__ == "__main__":
         'vivarium_public_health==0.9.18',
         'vivarium_cluster_tools==1.0.14',
         'vivarium_inputs[data]==3.0.1',
-        'risk_distributions==2.0.1'
+        'risk_distributions==2.0.1',
         
         # These are pinned for internal dependencies on IHME libraries
         'numpy<=1.15.4',
@@ -37,6 +37,7 @@ if __name__ == "__main__":
         'pytest-mock',
         'click',
         'loguru',
+        'drmaa',
     ]
 
     setup(
@@ -61,6 +62,7 @@ if __name__ == "__main__":
             [console_scripts]
             build_hypertension_artifact=vivarium_dcpn_hypertension_mgt.tools.cli:build_hypertension_artifact
             update_external_data_artifacts=vivarium_dcpn_hypertension_mgt.tools.cli:update_external_data_artifacts
+            pcalculate_proportion_hypertensive=vivarium_dcpn_hypertension_mgt.tools.cli:pcalculate_proportion_hypertensive
         ''',
 
         zip_safe=False,

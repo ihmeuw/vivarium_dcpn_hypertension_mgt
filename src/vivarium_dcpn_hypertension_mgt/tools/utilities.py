@@ -8,11 +8,11 @@ from loguru import logger
 from vivarium_inputs.data_artifact.cli import main as build_artifact
 from vivarium_inputs.utilities import reshape
 from vivarium_public_health.dataset_manager import Artifact
+from .proportion_hypertensive import HYPERTENSION_DATA_FOLDER, HYPERTENSION_HDF_KEY
+
 
 DRAW_COLUMNS = [f'draw_{i}' for i in range(1000)]
-
 CI_WIDTH_MAP = {99: 2.58, 95: 1.96, 90: 1.65, 68: 1}
-
 RANDOM_SEED = 123456
 
 # used to map the measures that need draws and the columns to keep after creating draws for each external data source
@@ -38,8 +38,7 @@ TRANSFORMATION_SPECIFICATION = {
 }
 
 
-def patch_external_data(artifact_path: Path):
-    art = Artifact(str(artifact_path))
+def patch_external_data(art):
     location = art.load('metadata.locations')[0]
     logger.info(f'Beginning external data for {location}.')
 
@@ -167,5 +166,20 @@ def get_external_data_files():
 
 def build_and_patch(model_spec, output_root, append):
     build_artifact(str(model_spec), output_root, None, append)
+    logger.info('GBD artifact built successfully.')
     artifact_path = output_root / f'{model_spec.stem}.hdf'
-    patch_external_data(artifact_path)
+    art = Artifact(str(artifact_path))
+    patch_external_data(art)
+    logger.info('External data patched.')
+    patch_proportion_hypertensive(art)
+    logger.info('Proportion hypertensive patched.')
+
+
+def patch_proportion_hypertensive(art):
+    location = art.load('metadata.locations')[0].replace(' ', '_').replace("'", "-").lower()
+    data = pd.read_hdf(HYPERTENSION_DATA_FOLDER / f'{location}.hdf', HYPERTENSION_HDF_KEY)
+    key = f'risk_factor.high_systolic_blood_pressure.{HYPERTENSION_HDF_KEY}'
+    if key in art:
+        art.replace(key, data)
+    else:
+        art.write(key, data)
