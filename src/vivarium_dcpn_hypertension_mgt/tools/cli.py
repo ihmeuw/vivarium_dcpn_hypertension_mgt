@@ -67,7 +67,7 @@ def update_external_data_artifacts():
     artifact_files = [f for f in artifact_folder.iterdir() if f.suffix == '.hdf']
 
     for f in artifact_files:
-        art = Artifact(f)
+        art = Artifact(str(f))
         patch_external_data(art)
 
 
