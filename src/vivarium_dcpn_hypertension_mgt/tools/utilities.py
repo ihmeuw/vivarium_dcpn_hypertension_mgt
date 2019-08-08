@@ -80,8 +80,8 @@ def prep_external_data(data_file, location):
             df = pd.concat([male, female])
         return df
 
-    if data_file.stem == 'guideline_ramp_conditions':  # we need to prep (e.g., normalize over sex) for each ramp
-        data = data.groupby(by=['guideline', 'ramp_name']).apply(prep).reset_index(drop=True)
+    if data_file.stem == 'ramp_transition_filters':  # we need to prep (e.g., normalize over sex) for each ramp
+        data = data.groupby(by=['guideline', 'from_ramp']).apply(prep).reset_index(drop=True)
     else:
         data = prep(data)
 
