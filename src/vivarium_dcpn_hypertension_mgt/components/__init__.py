@@ -1,0 +1,1 @@
+from .hypertension_medication import CVDRiskAttribute

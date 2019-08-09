@@ -41,7 +41,8 @@ components:
             - Disability()
             - MortalityObserver()
 
-    #vivarium_dcpn_hypertension_mgt.components:
+    vivarium_dcpn_hypertension_mgt.components:
+            - CVDRiskAttribute()
 
 configuration:
     input_data:
@@ -66,7 +67,7 @@ configuration:
             day: 1
         step_size: 7 # Days
     population:
-        population_size: 10_000
+        population_size: 100 #_000
         age_start: 20
         age_end: 100
         exit_age: 100

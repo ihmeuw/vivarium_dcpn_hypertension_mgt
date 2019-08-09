@@ -26,7 +26,8 @@ components:
             - Disability()
             - MortalityObserver()
 
-    #vivarium_dcpn_hypertension_mgt.components:
+    vivarium_dcpn_hypertension_mgt.components:
+            - CVDRiskAttribute()
 
 configuration:
     input_data:
