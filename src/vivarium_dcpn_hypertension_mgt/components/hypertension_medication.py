@@ -72,3 +72,47 @@ class FilterTransition(Transition):
 
         p.loc[filtered_index] = super().probability(filtered_index)
         return p
+
+
+class CVDRiskAttribute:
+
+    @property
+    def name(self):
+        return 'cvd_risk_attribute'
+
+    def setup(self, builder):
+
+        self.bmi = builder.value.get_value('high_body_mass_index_in_adults.exposure')
+        self.fpg = builder.value.get_value('high_fasting_plasma_glucose_continuous.exposure')
+
+        self.population_view = builder.population.get_view(['ischemic_heart_disease_event_time'])
+
+        self.clock = builder.time.clock()
+
+        builder.value.register_value_producer('cvd_risk_category', source=self.get_cvd_risk_category)
+
+    def get_cvd_risk_category(self, index):
+        """CVD risk category is 0 if bmi and fpg are not within risk ranges and
+        there has not been an ihd event in the last year; 1 otherwise.
+
+        Risk Ranges:
+            bmi >= 28 kg/m2
+            fpg: 6.1 - 6.9 mmol/L
+            time since last ihd event: <= 1 yr
+        """
+
+        cvd_risk = pd.Series(0, index=index)
+
+        bmi = self.bmi(index)
+        fpg = self.fpg(index)
+        time_since_ihd = self.clock() - self.population_view.get(index).ischemic_heart_disease_event_time
+
+        cvd_risk.loc[(28 <= bmi) | ((6.1 <= fpg) & (fpg <= 6.9)) | (time_since_ihd <= pd.Timedelta(days=365.25))] = 1
+
+        return cvd_risk
+
+
+
+
+
+

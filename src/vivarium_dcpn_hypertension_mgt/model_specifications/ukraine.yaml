@@ -22,11 +22,27 @@ components:
             - RiskEffect("risk_factor.high_systolic_blood_pressure", "cause.ischemic_stroke.incidence_rate")
             - RiskEffect("risk_factor.high_systolic_blood_pressure", "cause.intracerebral_hemorrhage.incidence_rate")
             - RiskEffect("risk_factor.high_systolic_blood_pressure", "cause.subarachnoid_hemorrhage.incidence_rate")
+
+            - Risk("risk_factor.high_body_mass_index_in_adults")
+            - RiskEffect("risk_factor.high_body_mass_index_in_adults", "cause.ischemic_heart_disease.incidence_rate")
+            - RiskEffect("risk_factor.high_body_mass_index_in_adults", "cause.ischemic_stroke.incidence_rate")
+            - RiskEffect("risk_factor.high_body_mass_index_in_adults", "cause.intracerebral_hemorrhage.incidence_rate")
+            - RiskEffect("risk_factor.high_body_mass_index_in_adults", "cause.subarachnoid_hemorrhage.incidence_rate")
+            - RiskEffect("risk_factor.high_body_mass_index_in_adults", "cause.hypertensive_heart_disease.incidence_rate")
+            - RiskEffect("risk_factor.high_body_mass_index_in_adults", "cause.chronic_kidney_disease_due_to_hypertension.incidence_rate")
+
+            - Risk("risk_factor.high_fasting_plasma_glucose_continuous")
+            - RiskEffect("risk_factor.high_fasting_plasma_glucose_continuous", "cause.ischemic_heart_disease.incidence_rate")
+            - RiskEffect("risk_factor.high_fasting_plasma_glucose_continuous", "cause.ischemic_stroke.incidence_rate")
+            - RiskEffect("risk_factor.high_fasting_plasma_glucose_continuous", "cause.intracerebral_hemorrhage.incidence_rate")
+            - RiskEffect("risk_factor.high_fasting_plasma_glucose_continuous", "cause.subarachnoid_hemorrhage.incidence_rate")
+            - RiskEffect("risk_factor.high_fasting_plasma_glucose_continuous", "cause.chronic_kidney_disease_due_to_hypertension.incidence_rate")
         metrics:
             - Disability()
             - MortalityObserver()
 
-    #vivarium_dcpn_hypertension_mgt.components:
+    vivarium_dcpn_hypertension_mgt.components:
+            - CVDRiskAttribute()
 
 configuration:
     input_data:
