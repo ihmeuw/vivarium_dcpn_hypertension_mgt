@@ -83,7 +83,7 @@ class CVDRiskAttribute:
     def setup(self, builder):
 
         self.bmi = builder.value.get_value('high_body_mass_index_in_adults.exposure')
-        self.fpg = builder.value.get_value('high_fasting_plasma_glucose.exposure')
+        self.fpg = builder.value.get_value('high_fasting_plasma_glucose_continuous.exposure')
 
         self.population_view = builder.population.get_view(['ischemic_heart_disease_event_time'])
 
@@ -98,16 +98,16 @@ class CVDRiskAttribute:
         Risk Ranges:
             bmi >= 28 km/m2
             fpg: 6.1 - 6.9 mmol/L
+            time since last ihd event: <= 1 yr
         """
 
         cvd_risk = pd.Series(0, index=index)
 
-        bmi_at_risk = self.bmi(index) >= 28
-        fpg_at_risk = 6.1 <= self.fpg(index) <= 6.9
-        ihd_at_risk = ((self.clock() - self.population_view(index).ischemic_heart_disease_event_time)
-                       <= pd.Timedelta(days=365.25))
+        bmi = self.bmi(index)
+        fpg = self.fpg(index)
+        time_since_ihd = self.clock() - self.population_view.get(index).ischemic_heart_disease_event_time
 
-        cvd_risk.loc[bmi_at_risk | fpg_at_risk | ihd_at_risk] = 1
+        cvd_risk.loc[(bmi >= 28) | ((fpg >= 6.1) & (fpg <= 6.9)) | (time_since_ihd <= pd.Timedelta(days=365.25))] = 1
 
         return cvd_risk
 
