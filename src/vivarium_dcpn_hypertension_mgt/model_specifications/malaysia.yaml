@@ -22,6 +22,21 @@ components:
             - RiskEffect("risk_factor.high_systolic_blood_pressure", "cause.ischemic_stroke.incidence_rate")
             - RiskEffect("risk_factor.high_systolic_blood_pressure", "cause.intracerebral_hemorrhage.incidence_rate")
             - RiskEffect("risk_factor.high_systolic_blood_pressure", "cause.subarachnoid_hemorrhage.incidence_rate")
+
+            - Risk("risk_factor.high_body_mass_index_in_adults")
+            - RiskEffect("risk_factor.high_body_mass_index_in_adults", "cause.ischemic_heart_disease.incidence_rate")
+            - RiskEffect("risk_factor.high_body_mass_index_in_adults", "cause.ischemic_stroke.incidence_rate")
+            - RiskEffect("risk_factor.high_body_mass_index_in_adults", "cause.intracerebral_hemorrhage.incidence_rate")
+            - RiskEffect("risk_factor.high_body_mass_index_in_adults", "cause.subarachnoid_hemorrhage.incidence_rate")
+            - RiskEffect("risk_factor.high_body_mass_index_in_adults", "cause.hypertensive_heart_disease.incidence_rate")
+            - RiskEffect("risk_factor.high_body_mass_index_in_adults", "cause.chronic_kidney_disease_due_to_hypertension.incidence_rate")
+
+            - Risk("risk_factor.high_fasting_plasma_glucose")
+            - RiskEffect("risk_factor.high_fasting_plasma_glucose", "cause.ischemic_heart_disease.incidence_rate")
+            - RiskEffect("risk_factor.high_fasting_plasma_glucose", "cause.ischemic_stroke.incidence_rate")
+            - RiskEffect("risk_factor.high_fasting_plasma_glucose", "cause.intracerebral_hemorrhage.incidence_rate")
+            - RiskEffect("risk_factor.high_fasting_plasma_glucose", "cause.subarachnoid_hemorrhage.incidence_rate")
+            - RiskEffect("risk_factor.high_fasting_plasma_glucose", "cause.chronic_kidney_disease_due_to_hypertension.incidence_rate")
         metrics:
             - Disability()
             - MortalityObserver()
