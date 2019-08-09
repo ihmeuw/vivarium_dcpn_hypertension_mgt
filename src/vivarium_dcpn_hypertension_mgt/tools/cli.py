@@ -8,6 +8,7 @@ from loguru import logger
 from vivarium_gbd_access.gbd import ARTIFACT_FOLDER
 from vivarium_inputs.data_artifact import utilities
 from vivarium_cluster_tools.psimulate.utilities import get_drmaa
+from vivarium_public_health.dataset_manager import Artifact
 from .utilities import patch_external_data, build_and_patch
 from . import proportion_hypertensive
 
@@ -66,7 +67,8 @@ def update_external_data_artifacts():
     artifact_files = [f for f in artifact_folder.iterdir() if f.suffix == '.hdf']
 
     for f in artifact_files:
-        patch_external_data(f)
+        art = Artifact(str(f))
+        patch_external_data(art)
 
 
 @click.command()
