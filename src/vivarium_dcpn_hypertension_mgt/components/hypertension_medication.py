@@ -96,7 +96,7 @@ class CVDRiskAttribute:
         there has not been an ihd event in the last year; 1 otherwise.
 
         Risk Ranges:
-            bmi >= 28 km/m2
+            bmi >= 28 kg/m2
             fpg: 6.1 - 6.9 mmol/L
             time since last ihd event: <= 1 yr
         """
