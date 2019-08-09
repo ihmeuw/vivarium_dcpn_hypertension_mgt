@@ -107,7 +107,7 @@ class CVDRiskAttribute:
         fpg = self.fpg(index)
         time_since_ihd = self.clock() - self.population_view.get(index).ischemic_heart_disease_event_time
 
-        cvd_risk.loc[(bmi >= 28) | ((fpg >= 6.1) & (fpg <= 6.9)) | (time_since_ihd <= pd.Timedelta(days=365.25))] = 1
+        cvd_risk.loc[(28 <= bmi) | ((6.1 <= fpg) & (fpg <= 6.9)) | (time_since_ihd <= pd.Timedelta(days=365.25))] = 1
 
         return cvd_risk
 
