@@ -1,22 +1,37 @@
 import pandas as pd
 
-from typing import Dict
+from typing import Dict, List
 
 from vivarium.framework.state_machine import State, Transition
 
 
 class TreatmentProfile(State):
 
-    def __init__(self, ramp: str, position: int, drug_dosages: Dict[str, float]):
+    def __init__(self, ramp: str, position: int, drug_dosages: Dict[str, float], domain_filters: List[str]):
         self.ramp = ramp
         self.position = position
         self.drug_dosages = drug_dosages
+        self._domain_filters = {f: [] for f in domain_filters}
 
         super().__init__(f'{self.ramp}_{self.position}')
 
-    def add_transition(self, output, probability_func=lambda index: pd.Series(1, index=index), filters: dict = None):
-        t = FilterTransition(self, output, probability_func=probability_func, filters=filters)
+    @property
+    def name(self):
+        return f'treatment_profile(ramp={self.ramp}, position={self.position})'
+
+    def add_transition(self, output, probability_func=lambda index: pd.Series(1, index=index), domain_filter: str = ""):
+        probability = probability_func([0])[0]  # assuming probability func will always return same probability
+        if domain_filter not in self._domain_filters:
+            raise ValueError(f'The given domain filter {domain_filter} is invalid for this state.')
+        elif sum(self._domain_filters[domain_filter]) + probability > 1:
+            raise ValueError(f'The given domain filter cannot be added with probability {probability} because it'
+                             f'would push the summed probabilities for this domain filter over 1.')
+
+        self._domain_filters[domain_filter].append(probability)
+
+        t = FilterTransition(self, output, probability_func=probability_func, domain_filter=domain_filter)
         self.transition_set.append(t)
+
         return t
 
     def __eq__(self, other):
@@ -25,53 +40,64 @@ class TreatmentProfile(State):
         profiles."""
         return self.drug_dosages == other.drug_dosages
 
+    def is_valid(self):
+        for domain_filter, probabilities in self._domain_filters.items():
+            if sum(probabilities) != 1:
+                return False
+            return True
+
 
 class FilterTransition(Transition):
 
     def __init__(self, input_profile, output_profile, probability_func=lambda index: pd.Series(1, index=index),
-                 filters: dict = None):
+                 domain_filter: str = ""):
 
-        self.filters = filters if filters else dict()
-
-        acceptable_filters = {'age', 'systolic_blood_pressure', 'sex'}
-        extra_filters = set(filters.keys()).difference(acceptable_filters)
-        if extra_filters:
-            raise ValueError(f'The only acceptable filter terms are based on "age", "sex", '
-                             f'and "systolic_blood_pressure". You included {extra_filters}.')
-
-        # TODO: check that filters is in form: <filter_term>: {'start': <#>, 'end': <#>} for age/bp
-        #  and "sex": {"Male" or "Female"} for sex
+        self.domain_filter = domain_filter
 
         super().__init__(input_profile, output_profile, probability_func)
 
     def setup(self, builder):
         self.population_view = builder.population.get_view(requires_columns=['age', 'sex'])
         self.blood_pressure = builder.value.get_value('high_systolic_blood_pressure.exposure')
+        self.cvd_risk_cat = builder.value.get_value('cvd_risk_category')
 
     def probability(self, index: pd.Index):
-        """Apply all filters (and-ed together) to index to determine who's
-        eligible for this transition."""
-        filtered_index = index
-
+        """Apply filter to index to determine who's eligible for this
+        transition. Everyone else gets probability 0."""
         p = pd.Series(0, index=index)
 
-        if 'age' in self.filters:
-            age = self.population_view(index).age
-            in_age_index = ((age >= self.filters['age']['start'])
-                            & (age < self.filters['age']['end'])).index
-            filtered_index = filtered_index.intersection(in_age_index)
-        if 'sex' in self.filters:
-            sex = self.population_view(index).sex
-            sex_index = (sex == self.filters['sex']).index
-            filtered_index = filtered_index.intersection(sex_index)
-        if 'systolic_blood_pressure' in self.filters:
-            sbp = self.blood_pressure(index)
-            bp_index = ((sbp >= self.filters['systolic_blood_pressure']['start'])
-                        & sbp < self.filters['systolic_blood_pressure']['end']).index
-            filtered_index = filtered_index.intersection(bp_index)
+        characteristics = self.population_view.get(index)
+        characteristics['systolic_blood_pressure'] = self.blood_pressure(index)
+        characteristics['cvd_risk_cat'] = self.cvd_risk_cat(index)
 
-        p.loc[filtered_index] = super().probability(filtered_index)
+        in_domain_index = characteristics.query(self.domain_filter).index
+
+        p.loc[in_domain_index] = super().probability(in_domain_index)
         return p
+
+
+class NullStateError(Exception):
+    """Exception raised when simulants are transitioned into the null state."""
+    pass
+
+
+class NullTreatmentProfile(TreatmentProfile):
+    """Marker state to indicate something has gone wrong. Simulants should never
+    enter this state."""
+
+    def __init__(self):
+        super().__init__(ramp="", position=0, drug_dosages={}, domain_filters=[])
+
+    @property
+    def name(self):
+        return 'null_treatment_profile'
+
+    def add_transition(self, output, probability_func=lambda index: pd.Series(1, index=index), domain_filter: str = ""):
+        raise NotImplementedError('Transitions cannot be added to the null state.')
+
+    def transition_effect(self, index, event_time, population_view):
+        raise NullStateError(f'{len(index)} simulants are attempting to transition '
+                             f'into the null treatment profile state.')
 
 
 class CVDRiskAttribute:
