@@ -3,6 +3,8 @@ import pandas as pd
 from typing import Dict, List
 
 from vivarium.framework.state_machine import State, Transition, Machine
+from . import utilities
+from .globals import HYPERTENSION_DRUGS
 
 
 class TreatmentProfile(State):
@@ -13,7 +15,7 @@ class TreatmentProfile(State):
         self.drug_dosages = drug_dosages
         self._domain_filters = {f: [] for f in domain_filters}
 
-        super().__init__(f'{self.ramp}_{self.position}')
+        super().__init__(f'{self.ramp}_{self.position}')  # state_id = ramp_position e.g., elderly_3
 
     @property
     def name(self):
@@ -138,9 +140,6 @@ class CVDRiskAttribute:
         return cvd_risk
 
 
-HYPERTENSION_DRUGS = ['thiazide_type_diuretics', 'beta_blockers', 'ace_inhibitors',
-                      'angiotensin_ii_blockers', 'calcium_channel_blockers', 'other']
-
 RAMPS = ['elderly', 'mono_starter', 'combo_starter', 'initial', 'no_treatment']
 RAMP_TRANSITIONS = {'elderly': ['elderly'],
                     'mono_starter': ['mono_starter', 'elderly'],
@@ -164,59 +163,53 @@ class TreatmentProfileModel(Machine):
         }
     }
 
-def load_domain_filters(builder):
-    guideline = builder.configuration['hypertension_drugs']['guideline']
+    def __init__(self):
+        super().__init__('treatment_profile', states=[])
 
-    if guideline == 'baseline':
-        # build full domain queries
-        full_domain = {'sex': ['Male', 'Female']*2, 'age_group_start': 0, 'age_group_end': 125,
-                       'systolic_blood_pressure_start': 60, 'systolic_blood_pressure_end': 300,
-                       'cvd_risk_cat': [0]*2 + [1]*2}
+    def setup(self, builder):
+        """Build TreatmentProfiles in specific order so that transitions will
+        be only to already built TreatmentProfiles:
+        0. null state profile (used to ensure only valid simulants are transitioned)
+        1. elderly ramp profiles (if exists)
+        2. mono_starter ramp profiles
+        3. combo_starter ramp profiles (if exists)
+        4. initial profiles
+        5. no treatment profile
 
-        no_tx = pd.DataFrame(full_domain)
-        no_tx['from_ramp'] = 'no_treatment'
-        no_txt['to_ramp'] = 'null'
-    else:
-        # load from data
+        Within each ramp, build profiles in reverse order (e.g., build position
+        3 then 2 then 1 etc.)
+        """
+        self.treatment_profiles = {}
 
-def load_efficacy_data(builder):
-    efficacy_data = builder.data.load('health_technology.hypertension_drugs.drug_efficacy')
-    efficacy_data.dosage = efficacy_data.dosage.map({'half': 0.5, 'standard': 1.0, 'double': 2.0})
-    return efficacy_data.set_index(['dosage', 'medication'])
+        profiles = utilities.load_treatment_profiles(builder)
+        domain_filters = utilities.load_domain_filters(builder)
+        efficacy_data = utilities.load_efficacy_data(builder)
 
+        ramps_to_build = [r for r in RAMPS if r in set(profiles.ramp_name)]
 
-def load_treatment_profiles(builder):
-    columns = HYPERTENSION_DRUGS + ['ramp_position']
+        # 0. add null state profile
+        self.treatment_profiles['null_state'] = NullTreatmentProfile()
 
-    initial_profiles = load_initial_profiles(builder)[columns]
-    guideline_profiles = load_guideline_profiles(builder)[columns]
-    no_treatment_profile = make_no_treatment_profile()
+        # used to find next profile when changing btw ramps
+        profile_efficacies = pd.Series()
 
-    return pd.concat([guideline_profiles, initial_profiles, no_treatment_profile])
+        # 1-5. add ramp profiles in order
+        for ramp in ramps_to_build:
+            ramp_profiles = profiles[profiles.ramp_name == ramp].sort_values(by='ramp_position', ascending=False)
 
+            profile_domain_filters = domain_filters.query("from_ramp == @ramp")
 
-def load_initial_profiles(builder):
-    profile_data = builder.data.load(f'health_technology.hypertension_drugs.baseline_treatment_profiles')
-    profile_data.value /= 100  # convert from percent
+            for profile in ramp_profiles.iterrows():
+                tx_profile = TreatmentProfile(ramp, profile[1].ramp_position, profile[1][HYPERTENSION_DRUGS],
+                                              list(profile_domain_filters.domain_filter))
 
-    # make a choice based on config for profiles marked for a choice between ace_inhibitors and angiotensin_ii_blockers
-    choice = builder.configuration['hypertension_drugs']['ace_inhibitors_or_angiotensin_ii_blockers']
-    other = 'ace_inhibitors' if choice == 'angiotensin_ii_blockers' else 'ace_inhibitors'
-    profile_data.loc[profile_data[choice] == 'parameter', choice] = 1
-    profile_data.loc[profile_data[other] == 'parameter', other] = 0
-    profile_data = profile_data.astype({choice: 'int', other: 'int'})
-    profile_data['ramp_position'] = pd.Series(range(len(profile_data)), index=profile_data.index) + 1
-    return profile_data
+                efficacy = utilities.calculate_pop_efficacy(tx_profile.drug_dosages, efficacy_data)
+                profile_efficacies = profile_efficacies.append(pd.Series(efficacy, index=[tx_profile.state_id]))
 
+                self.treatment_profiles[tx_profile.state_id] = tx_profile
 
-def load_guideline_profiles(builder):
-    profile_data = builder.data.load('health_technology.hypertension_drugs.guideline_ramp_profiles')
-    guideline = builder.configuration['hypertension_drugs']['guideline']
-
-    return profile_data[profile_data.guideline == guideline]
+        super().setup(builder)
 
 
-def make_no_treatment_profile():
-    profile_data = {d: 0 for d in HYPERTENSION_DRUGS}
-    profile_data['ramp_position'] = 1
-    return pd.DataFrame(profile_data, index=[0])
+
+def get_next_states(tx_profile: TreatmentProfile, domain_filters: pd.Series):
