@@ -2,7 +2,7 @@ import pandas as pd
 
 from typing import Dict, List
 
-from vivarium.framework.state_machine import State, Transition
+from vivarium.framework.state_machine import State, Transition, Machine
 
 
 class TreatmentProfile(State):
@@ -138,7 +138,85 @@ class CVDRiskAttribute:
         return cvd_risk
 
 
+HYPERTENSION_DRUGS = ['thiazide_type_diuretics', 'beta_blockers', 'ace_inhibitors',
+                      'angiotensin_ii_blockers', 'calcium_channel_blockers', 'other']
+
+RAMPS = ['elderly', 'mono_starter', 'combo_starter', 'initial', 'no_treatment']
+RAMP_TRANSITIONS = {'elderly': ['elderly'],
+                    'mono_starter': ['mono_starter', 'elderly'],
+                    'combo_starter': ['combo_starter', 'elderly'],
+                    'initial': ['mono_starter', 'combo_starter', 'elderly'],
+                    'no_treatment': ['mono_starter', 'combo_starter', 'elderly']}
 
 
+class TreatmentProfileModel(Machine):
+
+    configuration_defaults = {
+        'hypertension_drugs': {
+            'ace_inhibitors_or_angiotensin_ii_blockers': 'ace_inhibitors',
+            'other_drugs_efficacy': {
+                'mono': 6,
+                'dual': 6,
+                'triple': 6,
+                'quad': 6,
+            },
+            'guideline': 'baseline'  # one of: ["baseline", "china", "aha", "who"]
+        }
+    }
+
+def load_domain_filters(builder):
+    guideline = builder.configuration['hypertension_drugs']['guideline']
+
+    if guideline == 'baseline':
+        # build full domain queries
+        full_domain = {'sex': ['Male', 'Female']*2, 'age_group_start': 0, 'age_group_end': 125,
+                       'systolic_blood_pressure_start': 60, 'systolic_blood_pressure_end': 300,
+                       'cvd_risk_cat': [0]*2 + [1]*2}
+
+        no_tx = pd.DataFrame(full_domain)
+        no_tx['from_ramp'] = 'no_treatment'
+        no_txt['to_ramp'] = 'null'
+    else:
+        # load from data
+
+def load_efficacy_data(builder):
+    efficacy_data = builder.data.load('health_technology.hypertension_drugs.drug_efficacy')
+    efficacy_data.dosage = efficacy_data.dosage.map({'half': 0.5, 'standard': 1.0, 'double': 2.0})
+    return efficacy_data.set_index(['dosage', 'medication'])
 
 
+def load_treatment_profiles(builder):
+    columns = HYPERTENSION_DRUGS + ['ramp_position']
+
+    initial_profiles = load_initial_profiles(builder)[columns]
+    guideline_profiles = load_guideline_profiles(builder)[columns]
+    no_treatment_profile = make_no_treatment_profile()
+
+    return pd.concat([guideline_profiles, initial_profiles, no_treatment_profile])
+
+
+def load_initial_profiles(builder):
+    profile_data = builder.data.load(f'health_technology.hypertension_drugs.baseline_treatment_profiles')
+    profile_data.value /= 100  # convert from percent
+
+    # make a choice based on config for profiles marked for a choice between ace_inhibitors and angiotensin_ii_blockers
+    choice = builder.configuration['hypertension_drugs']['ace_inhibitors_or_angiotensin_ii_blockers']
+    other = 'ace_inhibitors' if choice == 'angiotensin_ii_blockers' else 'ace_inhibitors'
+    profile_data.loc[profile_data[choice] == 'parameter', choice] = 1
+    profile_data.loc[profile_data[other] == 'parameter', other] = 0
+    profile_data = profile_data.astype({choice: 'int', other: 'int'})
+    profile_data['ramp_position'] = pd.Series(range(len(profile_data)), index=profile_data.index) + 1
+    return profile_data
+
+
+def load_guideline_profiles(builder):
+    profile_data = builder.data.load('health_technology.hypertension_drugs.guideline_ramp_profiles')
+    guideline = builder.configuration['hypertension_drugs']['guideline']
+
+    return profile_data[profile_data.guideline == guideline]
+
+
+def make_no_treatment_profile():
+    profile_data = {d: 0 for d in HYPERTENSION_DRUGS}
+    profile_data['ramp_position'] = 1
+    return pd.DataFrame(profile_data, index=[0])
