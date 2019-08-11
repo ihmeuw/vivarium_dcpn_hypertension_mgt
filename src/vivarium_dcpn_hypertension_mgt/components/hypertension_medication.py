@@ -36,13 +36,6 @@ class TreatmentProfile(State):
 
         return t
 
-    def __hash__(self):
-        """Used to determine identical drug profiles (possibly across ramps)
-        in determining possible next profiles for initial non-guideline
-        profiles."""
-        sorted_drug_dosages = {k: self.drug_dosages[k] for k in sorted(self.drug_dosages)}
-        return hash(str(sorted_drug_dosages))
-
     def is_valid(self):
         for domain_filter, probabilities in self._domain_filters.items():
             if sum(probabilities) != 1:
