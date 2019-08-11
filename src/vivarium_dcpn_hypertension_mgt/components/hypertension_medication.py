@@ -54,7 +54,7 @@ class FilterTransition(Transition):
 
     @property
     def name(self):
-        return self.name + "_" + self.domain_filter
+        return super().name + "_" + self.domain_filter
 
     def setup(self, builder):
         self.population_view = builder.population.get_view(requires_columns=['age', 'sex'])
