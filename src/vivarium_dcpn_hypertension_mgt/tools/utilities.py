@@ -28,8 +28,9 @@ TRANSFORMATION_SPECIFICATION = {
     },
     'baseline_treatment_profiles': {
         'measures': ['percentage_among_therapy_category'],
-        'columns': ['location', 'hypertension_drug_category', 'DU', 'BB',
-                    'ACEI', 'ARB', 'CCB', 'other', 'measure'] + DRAW_COLUMNS
+        'columns': ['location', 'therapy_category', 'thiazide_type_diuretics',
+                    'beta_blockers', 'ace_inhibitors', 'angiotensin_ii_blockers',
+                    'calcium_channel_blockers', 'other', 'measure'] + DRAW_COLUMNS
     },
     'drug_efficacy': {
         'measures': ['half_dose_efficacy_mean', 'standard_dose_efficacy_mean', 'double_dose_efficacy_mean'],
@@ -154,8 +155,8 @@ def collapse_other_drug_profiles(data):
 
     prepped_profiles = [guideline_profiles]
 
-    for category in non_guideline_profiles.hypertension_drug_category.unique():
-        category_profiles = non_guideline_profiles[non_guideline_profiles.hypertension_drug_category == category]
+    for category in non_guideline_profiles.therapy_category.unique():
+        category_profiles = non_guideline_profiles[non_guideline_profiles.therapy_category == category]
 
         collapsed_profile = category_profiles.iloc[[0]]
         collapsed_profile['drug_class'] = 'other'
