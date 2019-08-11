@@ -77,6 +77,9 @@ class FilterTransition(Transition):
         p.loc[in_domain_index] = super().probability(in_domain_index)
         return p
 
+    def label(self):
+        return self.domain_filter
+
 
 class NullStateError(Exception):
     """Exception raised when simulants are transitioned into the null state."""
@@ -235,6 +238,29 @@ class TreatmentProfileModel(Machine):
         for state in self.states:
             assert state.is_valid(), f'State {state.state_id} is invalid.'
 
+    def to_dot(self, domain_filter_labels=False):
+        """Produces a ball and stick graph of this state machine.
+
+        Returns
+        -------
+        `graphviz.Digraph`
+            A ball and stick visualization of this state machine.
+        """
+        from graphviz import Digraph
+        dot = Digraph(format='png')
+
+        for state in self.states:
+            if isinstance(state, NullTreatmentProfile):
+                dot.node(state.state_id, style='dashed')
+            else:
+                dot.node(state.state_id)
+            for transition in state.transition_set:
+                label = transition.label() if domain_filter_labels else None
+                color = 'red' if isinstance(transition.output_state, NullTreatmentProfile) else 'green'
+
+                dot.edge(state.state_id, transition.output_state.state_id, label, color=color)
+        return dot
+
 
 def get_next_states(current_profile: TreatmentProfile, next_ramps: List[str],
                     tx_profiles: Dict[str, TreatmentProfile], profile_efficacies: pd.Series):
@@ -247,7 +273,7 @@ def get_next_states(current_profile: TreatmentProfile, next_ramps: List[str],
         both_next = mono_next.append(combo_next)
 
         # we want the two closest in efficacy but if there are ties, add both and split the probability
-        for unique_efficacy in [e for e in both_next.groupy(both_next)][:2]:
+        for unique_efficacy in [e for e in both_next.groupby(both_next)][:2]:
             next_profiles.append([(tx_profiles[n], 1/len(unique_efficacy)) for n in unique_efficacy.index])
 
         next_ramps.remove('mono_starter')
@@ -261,11 +287,11 @@ def get_next_states(current_profile: TreatmentProfile, next_ramps: List[str],
 
     for ramp in next_ramps:
         if current_profile.ramp == 'no_treatment':
-            next_in_ramp = tx_profiles[ramp]
+            next_in_ramp = tx_profiles[f'{ramp}_1']
             next_profiles.append((next_in_ramp, 1.0))
         else:
             next_in_ramp = utilities.get_closest_in_efficacy_in_ramp(current_efficacy, profile_efficacies, ramp)
-            next_profiles.extend([(tx_profiles[n], 1 / len(next_in_ramp)) for n in next_in_ramp])
+            next_profiles.extend([(tx_profiles[n], 1 / len(next_in_ramp)) for n in next_in_ramp.index])
 
     return next_profiles
 
