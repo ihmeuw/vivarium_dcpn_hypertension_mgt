@@ -46,6 +46,12 @@ def load_efficacy_data(builder) -> pd.DataFrame:
     efficacy_data = builder.data.load('health_technology.hypertension_drugs.drug_efficacy')
     efficacy_data.dosage = efficacy_data.dosage.map({'half': 0.5, 'standard': 1.0, 'double': 2.0})
 
+    zero_dosage = efficacy_data.loc[efficacy_data.dosage == 0.5].copy()
+    zero_dosage.dosage = 0.0
+    zero_dosage.append({'dosage': 'none', 'medication': 'other'}, ignore_index=True)
+    zero_dosage.sd_mean = 0.0
+    zero_dosage.value = 0.0
+
     other_efficacies = pd.Series(builder.configuration['hypertension_drugs']['other_drugs_efficacy'].to_dict())
     other_efficacies.name = 'value'
     other_efficacies.index.name = 'dosage'
@@ -53,7 +59,7 @@ def load_efficacy_data(builder) -> pd.DataFrame:
     other_efficacies['medication'] = 'other'
     other_efficacies['sd_mean'] = 0
 
-    efficacy_data = pd.concat([efficacy_data, other_efficacies])
+    efficacy_data = pd.concat([zero_dosage, efficacy_data, other_efficacies])
 
     return efficacy_data.set_index(['dosage', 'medication'])
 
@@ -76,10 +82,12 @@ def load_initial_profiles(builder) -> pd.DataFrame:
     other = 'ace_inhibitors' if choice == 'angiotensin_ii_blockers' else 'ace_inhibitors'
     profile_data.loc[profile_data[choice] == 'parameter', choice] = 1
     profile_data.loc[profile_data[other] == 'parameter', other] = 0
-    profile_data = profile_data.astype({choice: 'int', other: 'int', 'other': str})
 
     profile_data.loc[profile_data.other == 1, 'other'] = profile_data.loc[profile_data.other == 1,
                                                                             'therapy_category']
+    profile_data.loc[profile_data.other == 0, 'other'] = 'none'
+
+    profile_data = profile_data.astype({choice: 'int', other: 'int', 'other': str})
 
     profile_data['ramp_name'] = 'initial'
     profile_data['ramp_position'] = pd.Series(range(len(profile_data)), index=profile_data.index) + 1  # ramp positions start from 1
@@ -103,7 +111,6 @@ def make_no_treatment_profile() -> pd.DataFrame:
 def calculate_pop_efficacy(drug_dosages: dict, efficacy_data: pd.DataFrame) -> float:
     drug_dosages = pd.Series(drug_dosages)
 
-    drug_dosages = drug_dosages[drug_dosages.index != 'other']
     drug_dosages.name = 'dosage'
     drug_dosages.index.name = 'medication'
     drugs_idx = drug_dosages.reset_index().set_index(['dosage', 'medication']).index
