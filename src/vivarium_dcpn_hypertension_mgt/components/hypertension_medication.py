@@ -43,7 +43,7 @@ class TreatmentProfile(State):
             return True
 
     def graph_domain_filters(self):
-        def parse_string(f):
+        def parse_query_string(f):
             s = f.split(' <= ')
             if len(s) == 2:
                 return f'{s[1]}_start', int(s[0])
@@ -58,7 +58,7 @@ class TreatmentProfile(State):
         dfs = []
         for d, v in self._domain_filters.items():
             d_split = d.split(" and ")
-            parsed_filter = [parse_string(part) for part in d_split]
+            parsed_filter = [parse_query_string(part) for part in d_split]
             d_filter = {k: v for k, v in parsed_filter}
             d_filter['probability'] = sum(v)
             dfs.append(pd.DataFrame(d_filter, index=[0]))
