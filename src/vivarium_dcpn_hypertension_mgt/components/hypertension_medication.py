@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 
 from typing import Dict, List
@@ -187,7 +186,8 @@ class TreatmentProfileModel(Machine):
         efficacy_data = utilities.load_efficacy_data(builder)
 
         self.ramps = [r for r in TreatmentProfileModel.ramps if r in set(profiles.ramp_name)]
-        self.ramp_transitions = {k: [r for r in v if r in self.ramps] for k, v in TreatmentProfileModel.ramp_transitions}
+        self.ramp_transitions = {k: [r for r in v if r in self.ramps]
+                                 for k, v in TreatmentProfileModel.ramp_transitions.items()}
 
         # 0. add null state profile
         self.treatment_profiles['null_state'] = NullTreatmentProfile()
@@ -200,8 +200,9 @@ class TreatmentProfileModel(Machine):
             ramp_profiles = profiles[profiles.ramp_name == ramp].sort_values(by='ramp_position', ascending=False)
 
             for profile in ramp_profiles.iterrows():
-                profile_domain_filters = get_state_domain_filters(domain_filters, ramp, profile[1].ramp_position,
-                                                                  ramp_profiles, self.ramp_transitions)
+                profile_domain_filters = utilities.get_state_domain_filters(domain_filters, ramp,
+                                                                            profile[1].ramp_position, ramp_profiles,
+                                                                            self.ramp_transitions)
                 tx_profile = TreatmentProfile(ramp, profile[1].ramp_position, profile[1][HYPERTENSION_DRUGS],
                                               list(profile_domain_filters))
 
@@ -232,27 +233,14 @@ class TreatmentProfileModel(Machine):
             assert state.is_valid(), f'State {state.state_id} is invalid.'
 
 
-def get_state_domain_filters(domain_filters: pd.Series, ramp: str, position: int,
-                             ramp_profiles: pd.DataFrame, ramp_transitions: Dict) -> pd.Series:
-    if position == ramp_profiles.ramp_position.max() and len(ramp_transitions[ramp] == 1):
-        # can only transition w/i ramp and we've hit the end
-        profile_domain_filters = (utilities.build_full_domain_to_null_filter_transitions(ramp)
-                                  .set_index(['from_ramp', 'to_ramp'])).domain_filter
-
-    else:
-        profile_domain_filters = domain_filters.query("from_ramp == @ramp")
-
-    return profile_domain_filters
-
-
 def get_next_states(current_profile: TreatmentProfile, next_ramps: List[str],
                     tx_profiles: Dict[str, TreatmentProfile], profile_efficacies: pd.Series):
     next_profiles = []  # list of tuples of form (next_profile, probability)
     current_efficacy = profile_efficacies.loc[current_profile.state_id]
 
     if 'mono_starter' in next_ramps and 'combo_starter' in next_ramps and current_profile.ramp == 'initial':
-        mono_next = get_closest_in_efficacy_in_ramp(current_efficacy, profile_efficacies, 'mono_starter')
-        combo_next = get_closest_in_efficacy_in_ramp(current_efficacy, profile_efficacies, 'combo_starter')
+        mono_next = utilities.get_closest_in_efficacy_in_ramp(current_efficacy, profile_efficacies, 'mono_starter')
+        combo_next = utilities.get_closest_in_efficacy_in_ramp(current_efficacy, profile_efficacies, 'combo_starter')
         both_next = mono_next.append(combo_next)
 
         # we want the two closest in efficacy but if there are ties, add both and split the probability
@@ -265,31 +253,16 @@ def get_next_states(current_profile: TreatmentProfile, next_ramps: List[str],
     if current_profile.ramp in next_ramps:
         next_in_ramp = tx_profiles[f'{current_profile.ramp}_{current_profile.position + 1}']
         next_profiles.append((next_in_ramp, 1.0))
-        next_ramps.remove(current_profile.ramp)  # make sure if we're on mono_starter or combo_starter
+        next_ramps.remove(current_profile.ramp)
 
     for ramp in next_ramps:
         if current_profile.ramp == 'no_treatment':
             next_in_ramp = tx_profiles[ramp]
             next_profiles.append((next_in_ramp, 1.0))
         else:
-            next_in_ramp = get_closest_in_efficacy_in_ramp(current_efficacy, profile_efficacies, ramp)
+            next_in_ramp = utilities.get_closest_in_efficacy_in_ramp(current_efficacy, profile_efficacies, ramp)
             next_profiles.extend([(tx_profiles[n], 1 / len(next_in_ramp)) for n in next_in_ramp])
 
     return next_profiles
 
 
-def get_closest_in_efficacy_in_ramp(current_efficacy: float, profiles: pd.Series, ramp: str):
-    """Get up to two profiles in given ramp closest in efficacy to the current
-    efficacy such that their efficacy is equal to or greater than current
-    efficacy."""
-    ramp_profiles = profiles.filter(like=ramp).sort_values()
-
-    closest_idx = np.digitize([current_efficacy], ramp_profiles, right=True)
-
-    if closest_idx >= len(ramp_profiles):
-        closest_profiles = []
-
-    else:
-        closest_profiles = ramp_profiles[closest_idx: closest_idx+2]  # may be 1 or 2 profiles
-
-    return closest_profiles
