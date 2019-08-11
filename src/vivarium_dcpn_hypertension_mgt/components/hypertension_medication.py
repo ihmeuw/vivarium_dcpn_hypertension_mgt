@@ -59,6 +59,10 @@ class FilterTransition(Transition):
 
         super().__init__(input_profile, output_profile, probability_func)
 
+    @property
+    def name(self):
+        return self.name + "_" + self.domain_filter
+
     def setup(self, builder):
         self.population_view = builder.population.get_view(requires_columns=['age', 'sex'])
         self.blood_pressure = builder.value.get_value('high_systolic_blood_pressure.exposure')
@@ -251,8 +255,9 @@ def get_next_states(current_profile: TreatmentProfile, next_ramps: List[str],
         next_ramps.remove('combo_starter')
 
     if current_profile.ramp in next_ramps:
-        next_in_ramp = tx_profiles[f'{current_profile.ramp}_{current_profile.position + 1}']
-        next_profiles.append((next_in_ramp, 1.0))
+        if f'{current_profile.ramp}_{current_profile.position + 1}' in tx_profiles:  # we aren't at the last position
+            next_in_ramp = tx_profiles[f'{current_profile.ramp}_{current_profile.position + 1}']
+            next_profiles.append((next_in_ramp, 1.0))
         next_ramps.remove(current_profile.ramp)
 
     for ramp in next_ramps:
