@@ -101,6 +101,10 @@ class NullTreatmentProfile(TreatmentProfile):
         raise NullStateError(f'{len(index)} simulants are attempting to transition '
                              f'into the null treatment profile state.')
 
+    def is_valid(self):
+        """The null state is valid so long as there are no transitions from it."""
+        return not len(self.transition_set)
+
 
 class CVDRiskAttribute:
 
