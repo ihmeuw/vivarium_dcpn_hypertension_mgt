@@ -1,3 +1,9 @@
+import itertools
+
+import matplotlib.pyplot as plt
+from matplotlib.collections import PatchCollection
+from matplotlib.patches import Rectangle
+
 import numpy as np
 import pandas as pd
 
@@ -164,3 +170,38 @@ def get_state_domain_filters(domain_filters: pd.DataFrame, ramp: str, position: 
         profile_domain_filters = domain_filters.query("from_ramp == @ramp").domain_filter
 
     return profile_domain_filters
+
+
+def draw_rectangles(ax, state_filters, facecolor='r', edgecolor='b', alpha=0.4):
+    filters = []
+    for r in state_filters.iterrows():
+        xy = (r[1].age_start, r[1].systolic_blood_pressure_start)
+        rect = Rectangle(xy, r[1].width, r[1].height)
+        filters.append(rect)
+
+    pc = PatchCollection(filters, facecolor=facecolor, alpha=alpha, edgecolor=edgecolor)
+
+    ax.add_collection(pc)
+
+
+def plot_profile_domain_filters(data, figure_name):
+    i = 1
+
+    fig = plt.figure()
+
+    for sex, cvd_risk_cat in itertools.product(('Male', 'Female'), ('0', '1')):
+        ax = fig.add_subplot(2, 2, i)
+        draw_rectangles(ax, data[(data.sex == sex) & (data.cvd_risk_cat == cvd_risk_cat)])
+        ax.set_ylim(0, 360)
+        ax.set_xlim(-10, 135)
+
+        container = Rectangle((0, 60), 125, 240, fill=False, edgecolor='black', lw=4)
+        ax.add_patch(container)
+        ax.title.set_text(f'({sex}, {cvd_risk_cat})')
+        i += 1
+
+    fig.suptitle(figure_name)
+    fig.tight_layout()
+    fig.subplots_adjust(top=0.88)
+
+    return fig

@@ -43,7 +43,31 @@ class TreatmentProfile(State):
             return True
 
     def graph_domain_filters(self):
-        pass
+        def parse_string(f):
+            s = f.split(' <= ')
+            if len(s) == 2:
+                return f'{s[1]}_start', int(s[0])
+
+            s = f.split(' < ')
+            if len(s) == 2:
+                return f'{s[0]}_end', int(s[1])
+
+            s = f.split(' == ')
+            return s[0], s[1]
+
+        dfs = []
+        for d, v in self._domain_filters.items():
+            d_split = d.split(" and ")
+            parsed_filter = [parse_string(part) for part in d_split]
+            d_filter = {k: v for k, v in parsed_filter}
+            d_filter['probability'] = sum(v)
+            dfs.append(pd.DataFrame(d_filter, index=[0]))
+
+        df = pd.concat(dfs).reset_index(drop=True)
+        df['width'] = df.age_end - df.age_start
+        df['height'] = df.systolic_blood_pressure_end - df.systolic_blood_pressure_start
+
+        return utilities.plot_profile_domain_filters(df, self.state_id)
 
 
 class FilterTransition(Transition):
