@@ -54,10 +54,12 @@ class FilterTransition(Transition):
 
     @property
     def name(self):
+        # because a domain_filter describes a continuous region there may be
+        # multiple transitions between two states, each with a different domain filter
         return super().name + "_" + self.domain_filter
 
     def setup(self, builder):
-        self.population_view = builder.population.get_view(requires_columns=['age', 'sex'])
+        self.population_view = builder.population.get_view(['age', 'sex'])
         self.blood_pressure = builder.value.get_value('high_systolic_blood_pressure.exposure')
         self.cvd_risk_cat = builder.value.get_value('cvd_risk_category')
 
