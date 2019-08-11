@@ -4,6 +4,13 @@ import pandas as pd
 from .globals import HYPERTENSION_DRUGS
 
 
+def convert_filter_transition_to_query_string(row):
+    return f'{row.age_group_start} <= age and age < {row.age_group_end} and sex == {row.sex} and ' \
+        f'{row.systolic_blood_pressure_start} <= systolic_blood_pressure ' \
+        f'and systolic_blood_pressure < {row.systolic_blood_pressure_end} and ' \
+        f'cvd_risk_cat == {row.cvd_risk_cat}'
+
+
 def load_domain_filters(builder) -> pd.DataFrame:
     guideline = builder.configuration['hypertension_drugs']['guideline']
 
@@ -13,14 +20,8 @@ def load_domain_filters(builder) -> pd.DataFrame:
         ramp_filter_transitions = builder.data.load('health_technology.hypertension_drugs.ramp_transition_filters')
         ramp_filter_transitions = ramp_filter_transitions[ramp_filter_transitions.guideline == guideline]
 
-    # convert to query strings
-    def convert_to_query_string(row):
-        return f'{row.age_group_start} <= age and age < {row.age_group_end} and sex == {row.sex} and ' \
-            f'{row.systolic_blood_pressure_start} <= systolic_blood_pressure ' \
-            f'and systolic_blood_pressure < {row.systolic_blood_pressure_end} and ' \
-            f'cvd_risk_cat == {row.cvd_risk_cat}'
-
-    ramp_filter_transitions['domain_filter'] = ramp_filter_transitions.apply(convert_to_query_string, axis=1)
+    ramp_filter_transitions['domain_filter'] = ramp_filter_transitions.apply(convert_filter_transition_to_query_string,
+                                                                             axis=1)
     return ramp_filter_transitions.set_index(['from_ramp', 'to_ramp'])
 
 
@@ -135,7 +136,7 @@ def get_closest_in_efficacy_in_ramp(current_efficacy: float, profiles: pd.Series
     return closest_profiles
 
 
-def get_state_domain_filters(domain_filters: pd.Series, ramp: str, position: int,
+def get_state_domain_filters(domain_filters: pd.DataFrame, ramp: str, position: int,
                              ramp_profiles: pd.DataFrame, ramp_transitions: dict) -> pd.Series:
     """I enumerated the standard set of filter transitions but that breaks down
     for the last position in a ramp if the only ramp to transition to is the
@@ -143,8 +144,10 @@ def get_state_domain_filters(domain_filters: pd.Series, ramp: str, position: int
     the full domain."""
     if position == ramp_profiles.ramp_position.max() and ramp_transitions[ramp] == [ramp]:
         # can only transition w/i ramp and we've hit the end
-        profile_domain_filters = (build_full_domain_to_null_filter_transitions(ramp)
-                                  .set_index(['from_ramp', 'to_ramp'])).domain_filter
+        filter_transitions = build_full_domain_to_null_filter_transitions(ramp)
+        filter_transitions['domain_filter'] = filter_transitions.apply(convert_filter_transition_to_query_string,
+                                                                       axis=1)
+        profile_domain_filters = filter_transitions.set_index(['from_ramp', 'to_ramp']).domain_filter
 
     else:
         profile_domain_filters = domain_filters.query("from_ramp == @ramp").domain_filter
