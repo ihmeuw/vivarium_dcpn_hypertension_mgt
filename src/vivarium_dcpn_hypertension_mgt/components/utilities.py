@@ -80,7 +80,7 @@ def load_initial_profiles(builder) -> pd.DataFrame:
 
     # make a choice based on config for profiles marked for a choice between ace_inhibitors and angiotensin_ii_blockers
     choice = builder.configuration['hypertension_drugs']['ace_inhibitors_or_angiotensin_ii_blockers']
-    other = 'ace_inhibitors' if choice == 'angiotensin_ii_blockers' else 'ace_inhibitors'
+    other = 'ace_inhibitors' if choice == 'angiotensin_ii_blockers' else 'angiotensin_ii_blockers'
     profile_data.loc[profile_data[choice] == 'parameter', choice] = 1
     profile_data.loc[profile_data[other] == 'parameter', other] = 0
 
@@ -142,13 +142,24 @@ def get_state_domain_filters(domain_filters: pd.DataFrame, ramp: str, position: 
     for the last position in a ramp if the only ramp to transition to is the
     current ramp. In that case, just add a filter to the null state that covers
     the full domain."""
-    if position == ramp_profiles.ramp_position.max() and ramp_transitions[ramp] == [ramp]:
-        # can only transition w/i ramp and we've hit the end
-        filter_transitions = build_full_domain_to_null_filter_transitions(ramp)
-        filter_transitions['domain_filter'] = filter_transitions.apply(convert_filter_transition_to_query_string,
-                                                                       axis=1)
-        profile_domain_filters = filter_transitions.set_index(['from_ramp', 'to_ramp']).domain_filter
-
+    if position == ramp_profiles.ramp_position.max():
+        if ramp_transitions[ramp] == [ramp]:
+            # can only transition w/i ramp and we've hit the end
+            filter_transitions = build_full_domain_to_null_filter_transitions(ramp)
+            filter_transitions['domain_filter'] = filter_transitions.apply(convert_filter_transition_to_query_string,
+                                                                           axis=1)
+            profile_domain_filters = filter_transitions.set_index(['from_ramp', 'to_ramp']).domain_filter
+        else:  #FIXME: hard-coding this here because I don't want to go change format + re-validate input filter transitions rn
+            to_ramps = ramp_transitions[ramp]
+            profile_domain_filters_to_other_ramps = domain_filters.query("from_ramp == @ramp and "
+                                                                         "to_ramp in @to_ramps "
+                                                                         "and to_ramp != @ramp").domain_filter
+            filter_transitions = build_full_domain_to_null_filter_transitions(ramp)
+            filter_transitions.age_group_end = 80
+            filter_transitions['domain_filter'] = filter_transitions.apply(convert_filter_transition_to_query_string,
+                                                                           axis=1)
+            profile_domain_filters_within_ramp = filter_transitions.set_index(['from_ramp', 'to_ramp']).domain_filter
+            profile_domain_filters = pd.concat([profile_domain_filters_to_other_ramps, profile_domain_filters_within_ramp])
     else:
         profile_domain_filters = domain_filters.query("from_ramp == @ramp").domain_filter
 

@@ -26,7 +26,7 @@ class TreatmentProfile(State):
         if domain_filter not in self._domain_filters:
             raise ValueError(f'The given domain filter {domain_filter} is invalid for this state.')
         elif sum(self._domain_filters[domain_filter]) + probability > 1:
-            raise ValueError(f'The given domain filter cannot be added with probability {probability} because it'
+            raise ValueError(f'The given domain filter cannot be added with probability {probability} because it '
                              f'would push the summed probabilities for this domain filter over 1.')
 
         self._domain_filters[domain_filter].append(probability)
@@ -41,6 +41,9 @@ class TreatmentProfile(State):
             if sum(probabilities) != 1:
                 return False
             return True
+
+    def graph_domain_filters(self):
+        pass
 
 
 class FilterTransition(Transition):
@@ -76,9 +79,6 @@ class FilterTransition(Transition):
 
         p.loc[in_domain_index] = super().probability(in_domain_index)
         return p
-
-    def label(self):
-        return self.domain_filter
 
 
 class NullStateError(Exception):
@@ -255,7 +255,7 @@ class TreatmentProfileModel(Machine):
             else:
                 dot.node(state.state_id)
             for transition in state.transition_set:
-                label = transition.label() if domain_filter_labels else None
+                label = transition.domain_filter if domain_filter_labels else None
                 color = 'red' if isinstance(transition.output_state, NullTreatmentProfile) else 'green'
 
                 dot.edge(state.state_id, transition.output_state.state_id, label, color=color)
@@ -272,9 +272,18 @@ def get_next_states(current_profile: TreatmentProfile, next_ramps: List[str],
         combo_next = utilities.get_closest_in_efficacy_in_ramp(current_efficacy, profile_efficacies, 'combo_starter')
         both_next = mono_next.append(combo_next)
 
+        next_mono_combo = []
         # we want the two closest in efficacy but if there are ties, add both and split the probability
         for unique_efficacy in [e for e in both_next.groupby(both_next)][:2]:
-            next_profiles.append([(tx_profiles[n], 1/len(unique_efficacy)) for n in unique_efficacy.index])
+            next_mono_combo.extend([(tx_profiles[n], 0.5/len(unique_efficacy[1])) for n in unique_efficacy[1].index])
+
+        assert len(next_mono_combo) != 0, (f'There are no guideline states with efficacy >= current '
+                                           f'efficacy for initial profile {current_profile.state_id}.')
+
+        if len(next_mono_combo) == 1:  # there's only 1 next mono/combo eligible state so all prob goes to that state
+            next_mono_combo = [(next_mono_combo[1][0], 1.0)]
+
+        next_profiles.extend(next_mono_combo)
 
         next_ramps.remove('mono_starter')
         next_ramps.remove('combo_starter')
