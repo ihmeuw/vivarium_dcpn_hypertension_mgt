@@ -1,4 +1,5 @@
 import itertools
+from loguru import logger
 
 import matplotlib.pyplot as plt
 from matplotlib.collections import PatchCollection
@@ -135,11 +136,15 @@ def get_closest_in_efficacy_in_ramp(current_efficacy: float, profiles: pd.Series
 
     if closest_idx >= len(ramp_profiles):
         closest_profiles = pd.Series()
-
     else:
         closest_profiles = ramp_profiles[closest_idx: closest_idx+2]  # may be 1 or 2 profiles
 
     return closest_profiles
+
+
+def get_highest_position_profile_in_ramp(treatment_profiles: dict, ramp: str):
+    ramp_keys = sorted([k for k in treatment_profiles if ramp in k], key=lambda s: int(s.split('_')[-1]))
+    return treatment_profiles[ramp_keys[-1]]
 
 
 def get_state_domain_filters(domain_filters: pd.DataFrame, ramp: str, position: int,
@@ -155,17 +160,10 @@ def get_state_domain_filters(domain_filters: pd.DataFrame, ramp: str, position: 
             filter_transitions['domain_filter'] = filter_transitions.apply(convert_filter_transition_to_query_string,
                                                                            axis=1)
             profile_domain_filters = filter_transitions.set_index(['from_ramp', 'to_ramp']).domain_filter
-        else:  #FIXME: hard-coding this here because I don't want to go change format + re-validate input filter transitions rn
-            to_ramps = ramp_transitions[ramp]
-            profile_domain_filters_to_other_ramps = domain_filters.query("from_ramp == @ramp and "
-                                                                         "to_ramp in @to_ramps "
-                                                                         "and to_ramp != @ramp").domain_filter
-            filter_transitions = build_full_domain_to_null_filter_transitions(ramp)
-            filter_transitions.age_group_end = 80
-            filter_transitions['domain_filter'] = filter_transitions.apply(convert_filter_transition_to_query_string,
-                                                                           axis=1)
-            profile_domain_filters_within_ramp = filter_transitions.set_index(['from_ramp', 'to_ramp']).domain_filter
-            profile_domain_filters = pd.concat([profile_domain_filters_to_other_ramps, profile_domain_filters_within_ramp])
+        else:  # doing this here because I don't want to go change format + re-validate input filter transitions rn
+            profile_domain_filters = domain_filters.query("from_ramp == @ramp").reset_index()
+            profile_domain_filters.loc[profile_domain_filters.to_ramp == ramp, 'to_ramp'] = 'null_state'
+            profile_domain_filters = profile_domain_filters.set_index(['from_ramp', 'to_ramp']).domain_filter
     else:
         profile_domain_filters = domain_filters.query("from_ramp == @ramp").domain_filter
 

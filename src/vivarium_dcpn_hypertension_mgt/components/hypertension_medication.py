@@ -1,3 +1,4 @@
+from loguru import logger
 import pandas as pd
 
 from typing import Dict, List
@@ -298,14 +299,18 @@ def get_next_states(current_profile: TreatmentProfile, next_ramps: List[str],
 
         next_mono_combo = []
         # we want the two closest in efficacy but if there are ties, add both and split the probability
-        for unique_efficacy in [e for e in both_next.groupby(both_next)][:2]:
-            next_mono_combo.extend([(tx_profiles[n], 0.5/len(unique_efficacy[1])) for n in unique_efficacy[1].index])
+        unique_efficacies = [e for e in both_next.groupby(both_next)][:2]
+        for unique_efficacy in unique_efficacies:
+            next_mono_combo.extend([(tx_profiles[n], (1/len(unique_efficacies))/len(unique_efficacy[1]))
+                                    for n in unique_efficacy[1].index])
 
-        assert len(next_mono_combo) != 0, (f'There are no guideline states with efficacy >= current '
-                                           f'efficacy for initial profile {current_profile.state_id}.')
+        if len(next_mono_combo) == 0:
+            # FIXME: for now putting at position on ramp with highest efficacy if nothing has greater efficacy
+            logger.warning(f'There are no mono_starter or combo_starter states with efficacy >= current '
+                           f'efficacy for initial profile {current_profile.state_id}.')
 
-        if len(next_mono_combo) == 1:  # there's only 1 next mono/combo eligible state so all prob goes to that state
-            next_mono_combo = [(next_mono_combo[1][0], 1.0)]
+            next_mono_combo = [(utilities.get_highest_position_profile_in_ramp(tx_profiles, r), 0.5)
+                               for r in ['mono_starter', 'combo_starter']]
 
         next_profiles.extend(next_mono_combo)
 
@@ -324,7 +329,14 @@ def get_next_states(current_profile: TreatmentProfile, next_ramps: List[str],
             next_profiles.append((next_in_ramp, 1.0))
         else:
             next_in_ramp = utilities.get_closest_in_efficacy_in_ramp(current_efficacy, profile_efficacies, ramp)
-            next_profiles.extend([(tx_profiles[n], 1 / len(next_in_ramp)) for n in next_in_ramp.index])
+
+            if len(next_in_ramp) == 0:
+                # FIXME: for now putting at position on ramp with highest efficacy if nothing has greater efficacy
+                logger.warning(f'There are no {ramp} states with efficacy >= current '
+                               f'efficacy for profile {current_profile.state_id}.')
+                next_profiles.extend([(utilities.get_highest_position_profile_in_ramp(tx_profiles, ramp), 1.0)])
+            else:
+                next_profiles.extend([(tx_profiles[n], 1 / len(next_in_ramp)) for n in next_in_ramp.index])
 
     return next_profiles
 
