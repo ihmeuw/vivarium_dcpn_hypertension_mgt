@@ -210,3 +210,4 @@ def plot_profile_domain_filters(data, figure_name):
     fig.subplots_adjust(top=0.88)
 
     return fig
+

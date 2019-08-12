@@ -203,20 +203,6 @@ class TreatmentProfileModel(Machine):
         super().__init__('treatment_profile', states=[])
 
     def setup(self, builder):
-        """Build TreatmentProfiles in specific order so that transitions will
-        be only to already built TreatmentProfiles:
-        0. null state profile (used to ensure only valid simulants are transitioned)
-        1. elderly ramp profiles (if exists)
-        2. mono_starter ramp profiles
-        3. combo_starter ramp profiles (if exists)
-        4. initial profiles
-        5. no treatment profile
-
-        Within each ramp, build profiles in reverse order (e.g., build position
-        3 then 2 then 1 etc.)
-        """
-        self.treatment_profiles = {}
-
         profiles = utilities.load_treatment_profiles(builder)
         domain_filters = utilities.load_domain_filters(builder)
         efficacy_data = utilities.load_efficacy_data(builder)
@@ -225,43 +211,8 @@ class TreatmentProfileModel(Machine):
         self.ramp_transitions = {k: [r for r in v if r in self.ramps]
                                  for k, v in TreatmentProfileModel.ramp_transitions.items()}
 
-        # 0. add null state profile
-        self.treatment_profiles['null_state'] = NullTreatmentProfile()
-
-        # used to find next profile when changing btw ramps
-        profile_efficacies = pd.Series()
-
-        # 1-5. add ramp profiles in order
-        for ramp in self.ramps:
-            ramp_profiles = profiles[profiles.ramp_name == ramp].sort_values(by='ramp_position', ascending=False)
-
-            for profile in ramp_profiles.iterrows():
-                profile_domain_filters = utilities.get_state_domain_filters(domain_filters, ramp,
-                                                                            profile[1].ramp_position, ramp_profiles,
-                                                                            self.ramp_transitions)
-                tx_profile = TreatmentProfile(ramp, profile[1].ramp_position, profile[1][HYPERTENSION_DRUGS],
-                                              list(profile_domain_filters))
-
-                # record the current efficacy to be used in finding next states for other profiles
-                efficacy = utilities.calculate_pop_efficacy(tx_profile.drug_dosages, efficacy_data)
-                profile_efficacies = profile_efficacies.append(pd.Series(efficacy, index=[tx_profile.state_id]))
-
-                # add transitions to next treatment profile states
-                for next_profile, probability, transition_domain_filters in get_next_states(tx_profile,
-                                                                                 self.ramp_transitions[ramp].copy(),
-                                                                                 self.treatment_profiles,
-                                                                                 profile_efficacies,
-                                                                                 profile_domain_filters):
-
-                    for domain_filter in transition_domain_filters:
-                        tx_profile.add_transition(next_profile,
-                                                  probability_value=probability, domain_filter=domain_filter)
-
-                # add transitions to null state
-                for domain_filter in profile_domain_filters.filter(like='null_state'):
-                    tx_profile.add_transition(self.treatment_profiles['null_state'], domain_filter=domain_filter)
-
-                self.treatment_profiles[tx_profile.state_id] = tx_profile
+        self.treatment_profiles = build_states(self.ramps, self.ramp_transitions,
+                                               profiles, domain_filters, efficacy_data)
 
         self.add_states(self.treatment_profiles.values())
         super().setup(builder)
@@ -292,6 +243,63 @@ class TreatmentProfileModel(Machine):
 
                 dot.edge(state.state_id, transition.output_state.state_id, label, color=color)
         return dot
+
+
+def build_states(ramps, ramp_transitions, profiles, domain_filters, efficacy_data):
+    """Build TreatmentProfiles in specific order so that transitions will
+    be only to already built TreatmentProfiles:
+    0. null state profile (used to ensure only valid simulants are transitioned)
+    1. elderly ramp profiles (if exists)
+    2. mono_starter ramp profiles
+    3. combo_starter ramp profiles (if exists)
+    4. initial profiles
+    5. no treatment profile
+
+    Within each ramp, build profiles in reverse order (e.g., build position
+    3 then 2 then 1 etc.)
+    """
+    treatment_profiles = dict()
+
+    # 0. add null state profile
+    treatment_profiles['null_state'] = NullTreatmentProfile()
+
+    # used to find next profile when changing btw ramps
+    profile_efficacies = pd.Series()
+
+    # 1-5. add ramp profiles in order
+    for ramp in ramps:
+        ramp_profiles = profiles[profiles.ramp_name == ramp].sort_values(by='ramp_position', ascending=False)
+
+        for profile in ramp_profiles.iterrows():
+            profile_domain_filters = utilities.get_state_domain_filters(domain_filters, ramp,
+                                                                        profile[1].ramp_position, ramp_profiles,
+                                                                        ramp_transitions)
+            tx_profile = TreatmentProfile(ramp, profile[1].ramp_position, profile[1][HYPERTENSION_DRUGS],
+                                          list(profile_domain_filters))
+
+            # record the current efficacy to be used in finding next states for other profiles
+            efficacy = utilities.calculate_pop_efficacy(tx_profile.drug_dosages, efficacy_data)
+            profile_efficacies = profile_efficacies.append(pd.Series(efficacy, index=[tx_profile.state_id]))
+
+            # add transitions to next treatment profile states
+            for next_profile, probability, transition_domain_filters in get_next_states(tx_profile,
+                                                                                        ramp_transitions[
+                                                                                            ramp].copy(),
+                                                                                        treatment_profiles,
+                                                                                        profile_efficacies,
+                                                                                        profile_domain_filters):
+
+                for domain_filter in transition_domain_filters:
+                    tx_profile.add_transition(next_profile,
+                                              probability_value=probability, domain_filter=domain_filter)
+
+            # add transitions to null state
+            for domain_filter in profile_domain_filters.filter(like='null_state'):
+                tx_profile.add_transition(treatment_profiles['null_state'], domain_filter=domain_filter)
+
+            treatment_profiles[tx_profile.state_id] = tx_profile
+
+    return treatment_profiles
 
 
 def get_next_states(current_profile: TreatmentProfile, next_ramps: List[str],
