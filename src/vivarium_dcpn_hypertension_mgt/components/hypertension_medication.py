@@ -133,6 +133,9 @@ class NullTreatmentProfile(TreatmentProfile):
         """The null state is valid so long as there are no transitions from it."""
         return not len(self.transition_set)
 
+    def graph_domain_filters(self):
+        return utilities.plot_profile_domain_filters(None, self.state_id)
+
 
 class CVDRiskAttribute:
 
