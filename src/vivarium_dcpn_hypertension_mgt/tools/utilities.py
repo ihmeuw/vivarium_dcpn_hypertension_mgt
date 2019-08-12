@@ -63,12 +63,14 @@ def prep_external_data(data_file, location):
     data = pd.read_csv(data_file)
 
     def prep(df):
+        # strip all string columns to prevent the pesky leading/trailing spaces that may have crept in
+        df_obj = df.select_dtypes(['object'])
+        df[df_obj.columns] = df_obj.apply(lambda x: x.str.strip())
+
         if 'location' in df:
-            df.location = df.location.apply(lambda s: s.strip())  # some locs have trailing spaces so won't match
             df = df[df.location == location]
         if 'sex' in df and len(df.sex.unique()) == 3:
             # we have both sex and age specific values - we are defaulting to using age specific for now
-            df.sex = df.sex.apply(lambda s: s.strip())
             df = df[df.sex == 'Both']
 
         df = transform_data(data_file.stem, df)
