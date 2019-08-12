@@ -8,6 +8,10 @@ from . import utilities
 from .globals import HYPERTENSION_DRUGS
 
 
+def f(self, *arg, **kwargs, new_kwargs):
+    super().f(*args, **kwargs)
+    do other stuff.
+
 class TreatmentProfile(State):
 
     def __init__(self, ramp: str, position: int, drug_dosages: Dict[str, float], domain_filters: List[str]):
@@ -22,7 +26,11 @@ class TreatmentProfile(State):
     def name(self):
         return f'treatment_profile(ramp={self.ramp}, position={self.position})'
 
-    def add_transition(self, output, probability_func=lambda index: pd.Series(1, index=index), domain_filter: str = ""):
+    def add_transition(self, output_state, *args, **kwargs, probability_value: int = 1, domain_filter: str = ""):
+        if 'probability_func' in kwargs:
+            warn
+            
+        p
         probability = probability_func([0])[0]  # assuming probability func will always return same probability
         if domain_filter not in self._domain_filters:
             raise ValueError(f'The given domain filter {domain_filter} is invalid for this state.')
