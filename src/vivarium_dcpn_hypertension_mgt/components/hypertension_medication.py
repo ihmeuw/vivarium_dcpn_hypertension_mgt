@@ -255,7 +255,6 @@ class TreatmentProfileModel(Machine):
 
                 # add transitions to null state
                 for domain_filter in profile_domain_filters.filter(like='null_state'):
-                    import pdb; pdb.set_trace()
                     tx_profile.add_transition(self.treatment_profiles['null_state'], domain_filter=domain_filter)
 
                 self.treatment_profiles[tx_profile.state_id] = tx_profile
