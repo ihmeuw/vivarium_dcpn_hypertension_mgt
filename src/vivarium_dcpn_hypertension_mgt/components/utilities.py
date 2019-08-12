@@ -142,9 +142,10 @@ def get_closest_in_efficacy_in_ramp(current_efficacy: float, profiles: pd.Series
     return closest_profiles
 
 
-def get_highest_position_profile_in_ramp(treatment_profiles: dict, ramp: str):
+def get_position_profile_in_ramp(treatment_profiles: dict, ramp: str, highest_or_lowest: str = 'lowest'):
     ramp_keys = sorted([k for k in treatment_profiles if ramp in k], key=lambda s: int(s.split('_')[-1]))
-    return treatment_profiles[ramp_keys[-1]]
+    key = ramp_keys[0] if highest_or_lowest == 'lowest' else ramp_keys[-1]
+    return treatment_profiles[key]
 
 
 def get_state_domain_filters(domain_filters: pd.DataFrame, ramp: str, position: int,
@@ -168,6 +169,12 @@ def get_state_domain_filters(domain_filters: pd.DataFrame, ramp: str, position: 
         profile_domain_filters = domain_filters.query("from_ramp == @ramp").domain_filter
 
     return profile_domain_filters
+
+
+def get_domain_filters_between_ramps(domain_filters: pd.Series, from_ramp: str, to_ramp: str):
+    domain_filter_idx = pd.MultiIndex.from_tuples([(from_ramp, to_ramp)])
+    domain_filters_between_ramps = domain_filters.loc[domain_filter_idx]
+    return domain_filters_between_ramps
 
 
 def draw_rectangles(ax, state_filters, facecolor='r', edgecolor='b', alpha=0.4):
