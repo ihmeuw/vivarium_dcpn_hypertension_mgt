@@ -8,10 +8,6 @@ from . import utilities
 from .globals import HYPERTENSION_DRUGS
 
 
-def f(self, *arg, **kwargs, new_kwargs):
-    super().f(*args, **kwargs)
-    do other stuff.
-
 class TreatmentProfile(State):
 
     def __init__(self, ramp: str, position: int, drug_dosages: Dict[str, float], domain_filters: List[str]):
@@ -26,21 +22,22 @@ class TreatmentProfile(State):
     def name(self):
         return f'treatment_profile(ramp={self.ramp}, position={self.position})'
 
-    def add_transition(self, output_state, *args, **kwargs, probability_value: int = 1, domain_filter: str = ""):
+    def add_transition(self, output, probability_value: float = 1, domain_filter: str = "", **kwargs):
         if 'probability_func' in kwargs:
-            warn
-            
-        p
-        probability = probability_func([0])[0]  # assuming probability func will always return same probability
+            logger.warning('Probability functions cannot be used for transitions '
+                           'added to a treatment profile state. Only single '
+                           'value probabilities are allowed.')
+
         if domain_filter not in self._domain_filters:
             raise ValueError(f'The given domain filter {domain_filter} is invalid for this state.')
-        elif sum(self._domain_filters[domain_filter]) + probability > 1:
-            raise ValueError(f'The given domain filter cannot be added with probability {probability} because it '
+        elif sum(self._domain_filters[domain_filter]) + probability_value > 1:
+            raise ValueError(f'The given domain filter cannot be added with probability {probability_value} because it '
                              f'would push the summed probabilities for this domain filter over 1.')
 
-        self._domain_filters[domain_filter].append(probability)
+        self._domain_filters[domain_filter].append(probability_value)
 
-        t = FilterTransition(self, output, probability_func=probability_func, domain_filter=domain_filter)
+        t = FilterTransition(self, output, probability_func=lambda index: pd.Series(probability_value, index=index),
+                             domain_filter=domain_filter, **kwargs)
         self.transition_set.append(t)
 
         return t
@@ -82,11 +79,11 @@ class TreatmentProfile(State):
 class FilterTransition(Transition):
 
     def __init__(self, input_profile, output_profile, probability_func=lambda index: pd.Series(1, index=index),
-                 domain_filter: str = ""):
+                 domain_filter: str = "", **kwargs):
 
         self.domain_filter = domain_filter
 
-        super().__init__(input_profile, output_profile, probability_func)
+        super().__init__(input_profile, output_profile, probability_func, **kwargs)
 
     @property
     def name(self):
@@ -130,7 +127,7 @@ class NullTreatmentProfile(TreatmentProfile):
     def name(self):
         return 'null_treatment_profile'
 
-    def add_transition(self, output, probability_func=lambda index: pd.Series(1, index=index), domain_filter: str = ""):
+    def add_transition(self, output, probability_value: int = 1, domain_filter: str = "", **kwargs):
         raise NotImplementedError('Transitions cannot be added to the null state.')
 
     def transition_effect(self, index, event_time, population_view):
@@ -254,12 +251,11 @@ class TreatmentProfileModel(Machine):
                                                                  self.treatment_profiles, profile_efficacies):
                     domain_filter_idx = pd.MultiIndex.from_tuples([(ramp, next_profile.ramp)])
                     domain_filter = profile_domain_filters.loc[domain_filter_idx][0]
-                    tx_profile.add_transition(next_profile,
-                                              probability_func=lambda index: pd.Series(probability, index=index),
-                                              domain_filter=domain_filter)
+                    tx_profile.add_transition(next_profile, probability_value=probability, domain_filter=domain_filter)
 
                 # add transitions to null state
                 for domain_filter in profile_domain_filters.filter(like='null_state'):
+                    import pdb; pdb.set_trace()
                     tx_profile.add_transition(self.treatment_profiles['null_state'], domain_filter=domain_filter)
 
                 self.treatment_profiles[tx_profile.state_id] = tx_profile
