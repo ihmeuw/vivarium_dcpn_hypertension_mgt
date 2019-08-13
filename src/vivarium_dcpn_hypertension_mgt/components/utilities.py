@@ -196,9 +196,10 @@ def plot_profile_domain_filters(data, figure_name):
 
     for sex, cvd_risk_cat in itertools.product(('Male', 'Female'), ('0', '1')):
         ax = fig.add_subplot(2, 2, i)
-        draw_rectangles(ax, data[(data.sex == sex) & (data.cvd_risk_cat == cvd_risk_cat)])
-        ax.set_ylim(0, 360)
-        ax.set_xlim(-10, 135)
+        if data is not None and not data.empty:
+            draw_rectangles(ax, data[(data.sex == sex) & (data.cvd_risk_cat == cvd_risk_cat)])
+            ax.set_ylim(0, 360)
+            ax.set_xlim(-10, 135)
 
         container = Rectangle((0, 60), 125, 240, fill=False, edgecolor='black', lw=4)
         ax.add_patch(container)
