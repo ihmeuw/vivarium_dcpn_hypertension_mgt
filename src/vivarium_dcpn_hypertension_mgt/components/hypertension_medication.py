@@ -46,7 +46,7 @@ class TreatmentProfile(State):
         for domain_filter, probabilities in self._domain_filters.items():
             if sum(probabilities) != 1:
                 return False
-            return True
+        return True
 
     def graph_domain_filters(self):
         def parse_query_string(f):
@@ -247,11 +247,15 @@ class TreatmentProfileModel(Machine):
                 profile_efficacies = profile_efficacies.append(pd.Series(efficacy, index=[tx_profile.state_id]))
 
                 # add transitions to next treatment profile states
-                for next_profile, probability in get_next_states(tx_profile, self.ramp_transitions[ramp].copy(),
-                                                                 self.treatment_profiles, profile_efficacies):
-                    domain_filter_idx = pd.MultiIndex.from_tuples([(ramp, next_profile.ramp)])
-                    domain_filter = profile_domain_filters.loc[domain_filter_idx][0]
-                    tx_profile.add_transition(next_profile, probability_value=probability, domain_filter=domain_filter)
+                for next_profile, probability, transition_domain_filters in get_next_states(tx_profile,
+                                                                                 self.ramp_transitions[ramp].copy(),
+                                                                                 self.treatment_profiles,
+                                                                                 profile_efficacies,
+                                                                                 profile_domain_filters):
+
+                    for domain_filter in transition_domain_filters:
+                        tx_profile.add_transition(next_profile,
+                                                  probability_value=probability, domain_filter=domain_filter)
 
                 # add transitions to null state
                 for domain_filter in profile_domain_filters.filter(like='null_state'):
@@ -291,8 +295,9 @@ class TreatmentProfileModel(Machine):
 
 
 def get_next_states(current_profile: TreatmentProfile, next_ramps: List[str],
-                    tx_profiles: Dict[str, TreatmentProfile], profile_efficacies: pd.Series):
-    next_profiles = []  # list of tuples of form (next_profile, probability)
+                    tx_profiles: Dict[str, TreatmentProfile], profile_efficacies: pd.Series,
+                    ramp_domain_filters: pd.Series):
+    next_profiles = []  # list of tuples of form (next_profile, probability, domain_filters)
     current_efficacy = profile_efficacies.loc[current_profile.state_id]
 
     if 'mono_starter' in next_ramps and 'combo_starter' in next_ramps and current_profile.ramp == 'initial':
@@ -304,16 +309,18 @@ def get_next_states(current_profile: TreatmentProfile, next_ramps: List[str],
         # we want the two closest in efficacy but if there are ties, add both and split the probability
         unique_efficacies = [e for e in both_next.groupby(both_next)][:2]
         for unique_efficacy in unique_efficacies:
-            next_mono_combo.extend([(tx_profiles[n], (1/len(unique_efficacies))/len(unique_efficacy[1]))
-                                    for n in unique_efficacy[1].index])
+            profiles = [tx_profiles[n] for n in unique_efficacy[1].index]
+            probability = (1 / len(unique_efficacies)) / len(unique_efficacy[1])  # profiles w/ same eff have same prob
+            domain_filters = [utilities.get_domain_filters_between_ramps(ramp_domain_filters, current_profile.ramp,
+                                                                         p.ramp) for p in profiles]
+            next_mono_combo.extend([(p, probability, f) for p, f in zip(profiles, domain_filters)])
 
-        if len(next_mono_combo) == 0:
-            # FIXME: for now putting at position on ramp with highest efficacy if nothing has greater efficacy
+        if len(next_mono_combo) == 0:  # no profiles with efficacy >= current
             logger.warning(f'There are no mono_starter or combo_starter states with efficacy >= current '
                            f'efficacy for initial profile {current_profile.state_id}.')
-
-            next_mono_combo = [(utilities.get_highest_position_profile_in_ramp(tx_profiles, r), 0.5)
-                               for r in ['mono_starter', 'combo_starter']]
+            domain_filters = utilities.get_domain_filters_between_ramps(ramp_domain_filters, current_profile.ramp,
+                                                                        'mono_starter')
+            next_mono_combo = [(tx_profiles['null_state'], 1.0, domain_filters)]
 
         next_profiles.extend(next_mono_combo)
 
@@ -323,23 +330,29 @@ def get_next_states(current_profile: TreatmentProfile, next_ramps: List[str],
     if current_profile.ramp in next_ramps:
         if f'{current_profile.ramp}_{current_profile.position + 1}' in tx_profiles:  # we aren't at the last position
             next_in_ramp = tx_profiles[f'{current_profile.ramp}_{current_profile.position + 1}']
-            next_profiles.append((next_in_ramp, 1.0))
+            domain_filters = utilities.get_domain_filters_between_ramps(ramp_domain_filters, current_profile.ramp,
+                                                                        current_profile.ramp)
+
+            next_profiles.append((next_in_ramp, 1.0, domain_filters))
         next_ramps.remove(current_profile.ramp)
 
     for ramp in next_ramps:
+        domain_filters = utilities.get_domain_filters_between_ramps(ramp_domain_filters, current_profile.ramp, ramp)
+
         if current_profile.ramp == 'no_treatment':
-            next_in_ramp = tx_profiles[f'{ramp}_1']
-            next_profiles.append((next_in_ramp, 1.0))
+            next_in_ramp = utilities.get_position_profile_in_ramp(tx_profiles, ramp, 'lowest')
+            next_profiles.append((next_in_ramp, 1.0, domain_filters))
         else:
             next_in_ramp = utilities.get_closest_in_efficacy_in_ramp(current_efficacy, profile_efficacies, ramp)
 
             if len(next_in_ramp) == 0:
-                # FIXME: for now putting at position on ramp with highest efficacy if nothing has greater efficacy
                 logger.warning(f'There are no {ramp} states with efficacy >= current '
                                f'efficacy for profile {current_profile.state_id}.')
-                next_profiles.extend([(utilities.get_highest_position_profile_in_ramp(tx_profiles, ramp), 1.0)])
+
+                next_profiles.extend([(tx_profiles['null_state'], 1.0, domain_filters)])
             else:
-                next_profiles.extend([(tx_profiles[n], 1 / len(next_in_ramp)) for n in next_in_ramp.index])
+                next_profiles.extend([(tx_profiles[n], 1 / len(next_in_ramp), domain_filters)
+                                      for n in next_in_ramp.index])
 
     return next_profiles
 
