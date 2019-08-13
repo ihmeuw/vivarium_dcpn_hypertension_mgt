@@ -74,7 +74,6 @@ def load_efficacy_data(builder) -> pd.DataFrame:
 
 def load_treatment_profiles(builder) -> pd.DataFrame:
     columns = HYPERTENSION_DRUGS + ['ramp_position', 'ramp_name']
-
     initial_profiles = load_initial_profiles(builder)[columns]
     guideline_profiles = load_guideline_profiles(builder)[columns]
     no_treatment_profile = make_no_treatment_profile()
@@ -154,9 +153,9 @@ def get_state_domain_filters(domain_filters: pd.DataFrame, ramp: str, position: 
     for the last position in a ramp if the only ramp to transition to is the
     current ramp. In that case, just add a filter to the null state that covers
     the full domain."""
-    if position == ramp_profiles.ramp_position.max():
-        if ramp_transitions[ramp] == [ramp]:
-            # can only transition w/i ramp and we've hit the end
+    if position == ramp_profiles.ramp_position.max() or not(ramp_transitions[ramp]):
+        if ramp_transitions[ramp] == [ramp] or not ramp_transitions[ramp]:
+            # can only transition w/i ramp and we've hit the end or we're in baseline and no transitions allowed
             filter_transitions = build_full_domain_to_null_filter_transitions(ramp)
             filter_transitions['domain_filter'] = filter_transitions.apply(convert_filter_transition_to_query_string,
                                                                            axis=1)
