@@ -131,7 +131,7 @@ def clean_data(data, measure):
     return data
 
 
-def create_draw_level_data(data, measure, columns_to_keep, random_draws):
+def create_draw_level_data(data, measure, columns_to_keep):
     no_ci_to_convert = data.uncertainty_level.isnull()
 
     to_draw = data[~no_ci_to_convert]
