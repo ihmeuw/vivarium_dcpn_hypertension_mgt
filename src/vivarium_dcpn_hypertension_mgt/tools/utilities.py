@@ -13,7 +13,6 @@ from .proportion_hypertensive import HYPERTENSION_DATA_FOLDER, HYPERTENSION_HDF_
 
 DRAW_COLUMNS = [f'draw_{i}' for i in range(1000)]
 CI_WIDTH_MAP = {99: 2.58, 95: 1.96, 90: 1.65, 68: 1}
-RANDOM_SEED = 123456
 
 # used to map the measures that need draws and the columns to keep after creating draws for each external data source
 TRANSFORMATION_SPECIFICATION = {
