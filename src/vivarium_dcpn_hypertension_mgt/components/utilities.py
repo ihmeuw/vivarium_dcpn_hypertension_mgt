@@ -73,12 +73,14 @@ def load_efficacy_data(builder) -> pd.DataFrame:
 
 
 def load_treatment_profiles(builder) -> pd.DataFrame:
-    columns = HYPERTENSION_DRUGS + ['ramp_position', 'ramp_name']
+    columns = HYPERTENSION_DRUGS + ['ramp_position', 'ramp_name', 'probability_given_treated']
     initial_profiles = load_initial_profiles(builder)[columns]
     guideline_profiles = load_guideline_profiles(builder)[columns]
-    no_treatment_profile = make_no_treatment_profile()
+    no_treatment_profile = make_no_treatment_profile()[columns]
 
-    return pd.concat([guideline_profiles, initial_profiles, no_treatment_profile])
+    profiles = pd.concat([guideline_profiles, initial_profiles, no_treatment_profile])
+    profiles['profile_name'] = profiles.apply(lambda r: r.ramp_name + '_' + str(r.ramp_position), axis=1)
+    return profiles.reset_index(drop=True)
 
 
 def load_initial_profiles(builder) -> pd.DataFrame:
@@ -98,6 +100,14 @@ def load_initial_profiles(builder) -> pd.DataFrame:
 
     profile_data['ramp_name'] = 'initial'
     profile_data['ramp_position'] = pd.Series(range(len(profile_data)), index=profile_data.index) + 1  # ramp positions start from 1
+
+    therapy_cat_data = (builder.data.load('health_technology.hypertension_drugs.baseline_therapy_categories')
+                        .filter(['therapy_category', 'value']))
+
+    profile_data = profile_data.merge(therapy_cat_data, on='therapy_category')
+    profile_data['probability_given_treated'] = profile_data.value_x / 100 * profile_data.value_y / 100
+    profile_data['probability_given_treated'] /= profile_data['probability_given_treated'].sum()
+
     return profile_data
 
 
@@ -105,6 +115,7 @@ def load_guideline_profiles(builder) -> pd.DataFrame:
     profile_data = builder.data.load('health_technology.hypertension_drugs.guideline_ramp_profiles')
     guideline = builder.configuration['hypertension_drugs']['guideline']
     profile_data['other'] = '0'
+    profile_data['probability_given_treated'] = 0
     return profile_data[profile_data.guideline == guideline]
 
 
@@ -112,7 +123,45 @@ def make_no_treatment_profile() -> pd.DataFrame:
     profile_data = {d: 0 for d in HYPERTENSION_DRUGS}
     profile_data['ramp_name'] = 'no_treatment'
     profile_data['ramp_position'] = 1
+    profile_data['probability_given_treated'] = 0
     return pd.DataFrame(profile_data, index=[0])
+
+
+def load_coverage_data(builder) -> pd.DataFrame:
+    coverage_data = (builder.data.load('health_technology.hypertension_drugs.baseline_treatment_coverage')
+                     .pivot_table(index=['sex', 'age_group_start', 'age_group_end'],
+                                  columns='measure', values='value').reset_index())
+    coverage_data.treated_among_hypertensive /= 100  # convert from percent
+    coverage_data.control_among_treated /= 100  # convert from percent
+    return coverage_data
+
+
+def probability_profile_given_sbp_level(sbp_level, proportion_high_sbp, coverage, profiles):
+    hypertensive = proportion_high_sbp / (1 - coverage.control_among_treated * coverage.treated_among_hypertensive)
+
+    if sbp_level == 'below_140':
+        prob_treated = (coverage.control_among_treated * coverage.treated_among_hypertensive
+                        * hypertensive / (1 - proportion_high_sbp))
+
+    elif sbp_level == 'above_140':
+        prob_treated = ((1 - coverage.control_among_treated) * coverage.treated_among_hypertensive
+                        * hypertensive / proportion_high_sbp)
+
+    else:
+        raise ValueError(f'The only acceptable sbp levels are "below_140" or "above_140". '
+                         f'You provided {sbp_level}.')
+
+    profile_names = list(profiles['profile_name'])
+    no_treatment_idx = profile_names.index('no_treatment_1')
+
+    def get_profile_probalities(p_treated):
+        p_profile = p_treated * profiles.probability_given_treated.values
+        p_profile[no_treatment_idx] = 1.0 - np.sum(p_profile)
+        return p_profile
+
+    prob_profiles = prob_treated.apply(get_profile_probalities)
+
+    return prob_profiles, profile_names #np.stack(prob_profiles.values, axis=0), profile_names
 
 
 def calculate_pop_efficacy(drug_dosages: dict, efficacy_data: pd.DataFrame) -> float:
