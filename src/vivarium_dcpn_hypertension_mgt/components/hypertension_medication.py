@@ -1,4 +1,5 @@
 from loguru import logger
+import numpy as np
 import pandas as pd
 
 from typing import Dict, List
@@ -206,19 +207,55 @@ class TreatmentProfileModel(Machine):
         super().__init__('treatment_profile', states=[])
 
     def setup(self, builder):
-        profiles = utilities.load_treatment_profiles(builder)
+        self.profiles = utilities.load_treatment_profiles(builder)
         domain_filters = utilities.load_domain_filters(builder)
         efficacy_data = utilities.load_efficacy_data(builder)
 
-        self.ramps = [r for r in TreatmentProfileModel.ramps if r in set(profiles.ramp_name)]
+        self.ramps = [r for r in TreatmentProfileModel.ramps if r in set(self.profiles.ramp_name)]
         self.ramp_transitions = {k: [r for r in v if r in self.ramps]
                                  for k, v in TreatmentProfileModel.ramp_transitions.items()}
 
         self.treatment_profiles = build_states(self.ramps, self.ramp_transitions,
-                                               profiles, domain_filters, efficacy_data)
+                                               self.profiles, domain_filters, efficacy_data)
 
         self.add_states(self.treatment_profiles.values())
         super().setup(builder)
+
+        self.coverage = builder.lookup.build_table(utilities.load_coverage_data(builder),
+                                                   parameter_columns=[('age', 'age_group_start', 'age_group_end')])
+        self.proportion_above_hypertensive_threshold = builder.lookup.build_table(
+            builder.data.load('risk_factor.high_systolic_blood_pressure.proportion_above_hypertensive_threshold'))
+
+        sbp = builder.value.get_value('high_systolic_blood_pressure.exposure')
+
+        self.raw_sbp = lambda index: pd.Series(sbp.source(index), index=index)
+
+        self.randomness = builder.randomness.get_stream('initial_treatment_profile')
+
+        self.population_view = builder.population.get_view([self.state_column])
+        builder.population.initializes_simulants(self.on_initialize_simulants, creates_columns=[self.state_column])
+
+    def on_initialize_simulants(self, pop_data):
+        initial_tx_profiles = self.get_initial_profiles(pop_data.index)
+        self.population_view.update(initial_tx_profiles)
+
+    def get_initial_profiles(self, index):
+        raw_sbp = self.raw_sbp(index)
+        below_140 = raw_sbp[raw_sbp < 140].index
+        above_140 = raw_sbp[raw_sbp >= 140].index
+
+        profile_prob_below_140, profile_names = utilities.probability_profile_given_sbp_level('below_140',
+                                    self.proportion_above_hypertensive_threshold(below_140),
+                                    self.coverage(below_140), self.profiles)
+        profile_prob_above_140, profile_names = utilities.probability_profile_given_sbp_level('above_140',
+                                    self.proportion_above_hypertensive_threshold(above_140),
+                                    self.coverage(above_140), self.profiles)
+
+        profile_probabilities = np.stack(pd.concat([profile_prob_below_140, profile_prob_above_140])
+                                         .sort_index().values, axis=0)
+        profile_choices = self.randomness.choice(index, choices=profile_names, p=profile_probabilities)
+
+        return profile_choices
 
     def validate(self):
         for state in self.states:
@@ -366,5 +403,6 @@ def get_next_states(current_profile: TreatmentProfile, next_ramps: List[str],
                                       for n in next_in_ramp.index])
 
     return next_profiles
+
 
 
