@@ -106,10 +106,8 @@ def transform_data(data_type, data):
     measure_data = [] if spec['measures'] else [data]
 
     for m in spec['measures']:
-        np.random.seed(RANDOM_SEEDS_BY_MEASURE[m])
-        d = np.random.random(1000)
         df = clean_data(data, m)
-        measure_data.append(create_draw_level_data(df, m, spec['columns'], random_draws=d))
+        measure_data.append(create_draw_level_data(df, m, spec['columns']))
 
     return pd.concat(measure_data)
 
@@ -148,9 +146,11 @@ def create_draw_level_data(data, measure, columns_to_keep, random_draws):
 
     data = pd.concat([data, draws], axis=1)
 
+    np.random.seed(RANDOM_SEEDS_BY_MEASURE[measure])
+    d = np.random.random(1000)
     for row in data.loc[~no_ci_to_convert].iterrows():
         dist = norm(loc=row[1]['mean'], scale=row[1]['sd'])
-        draws = dist.ppf(random_draws)
+        draws = dist.ppf(d)
         data.loc[row[0], DRAW_COLUMNS] = draws
 
     return data.filter(columns_to_keep)
