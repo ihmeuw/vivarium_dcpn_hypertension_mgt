@@ -209,14 +209,14 @@ class TreatmentProfileModel(Machine):
     def setup(self, builder):
         self.profiles = utilities.load_treatment_profiles(builder)
         domain_filters = utilities.load_domain_filters(builder)
-        efficacy_data = utilities.load_efficacy_data(builder)
+        self.efficacy_data = utilities.load_efficacy_data(builder)
 
         self.ramps = [r for r in TreatmentProfileModel.ramps if r in set(self.profiles.ramp_name)]
         self.ramp_transitions = {k: [r for r in v if r in self.ramps]
                                  for k, v in TreatmentProfileModel.ramp_transitions.items()}
 
         self.treatment_profiles = build_states(self.ramps, self.ramp_transitions,
-                                               self.profiles, domain_filters, efficacy_data)
+                                               self.profiles, domain_filters, self.efficacy_data)
 
         self.add_states(self.treatment_profiles.values())
         super().setup(builder)
@@ -234,6 +234,8 @@ class TreatmentProfileModel(Machine):
 
         self.population_view = builder.population.get_view([self.state_column])
         builder.population.initializes_simulants(self.on_initialize_simulants, creates_columns=[self.state_column])
+
+        builder.value.register_value_producer('prescribed_medications', source=self.get_prescribed_medications)
 
     def on_initialize_simulants(self, pop_data):
         initial_tx_profiles = self.get_initial_profiles(pop_data.index)
@@ -256,6 +258,15 @@ class TreatmentProfileModel(Machine):
         profile_choices = self.randomness.choice(index, choices=profile_names, p=profile_probabilities)
 
         return profile_choices
+
+    def get_prescribed_medications(self, index):
+        df = pd.DataFrame({d: 0 if d != 'other' else 'none' for d in HYPERTENSION_DRUGS}, index=index)
+
+        for state, pop_in_state in self._get_state_pops(index):
+            if not pop_in_state.empty:
+                df.loc[pop_in_state.index, HYPERTENSION_DRUGS] = pd.DataFrame(state.drug_dosages, index=pop_in_state.index)
+
+        return df
 
     def validate(self):
         for state in self.states:
@@ -314,7 +325,7 @@ def build_states(ramps, ramp_transitions, profiles, domain_filters, efficacy_dat
             profile_domain_filters = utilities.get_state_domain_filters(domain_filters, ramp,
                                                                         profile[1].ramp_position, ramp_profiles,
                                                                         ramp_transitions)
-            tx_profile = TreatmentProfile(ramp, profile[1].ramp_position, profile[1][HYPERTENSION_DRUGS],
+            tx_profile = TreatmentProfile(ramp, profile[1].ramp_position, (profile[1][HYPERTENSION_DRUGS]).to_dict(),
                                           list(profile_domain_filters))
 
             # record the current efficacy to be used in finding next states for other profiles

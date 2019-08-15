@@ -114,13 +114,13 @@ def load_initial_profiles(builder) -> pd.DataFrame:
 def load_guideline_profiles(builder) -> pd.DataFrame:
     profile_data = builder.data.load('health_technology.hypertension_drugs.guideline_ramp_profiles')
     guideline = builder.configuration['hypertension_drugs']['guideline']
-    profile_data['other'] = '0'
+    profile_data['other'] = 'none'
     profile_data['probability_given_treated'] = 0
     return profile_data[profile_data.guideline == guideline]
 
 
 def make_no_treatment_profile() -> pd.DataFrame:
-    profile_data = {d: 0 for d in HYPERTENSION_DRUGS}
+    profile_data = {d: (0.0 if d != 'other' else 'none') for d in HYPERTENSION_DRUGS}
     profile_data['ramp_name'] = 'no_treatment'
     profile_data['ramp_position'] = 1
     profile_data['probability_given_treated'] = 0
