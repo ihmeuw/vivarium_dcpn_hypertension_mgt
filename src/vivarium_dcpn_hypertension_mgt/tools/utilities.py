@@ -38,6 +38,16 @@ TRANSFORMATION_SPECIFICATION = {
     }
 }
 
+RANDOM_SEEDS_BY_MEASURE = {
+    'treated_among_hypertensive': 12345,
+    'control_among_treated': 23456,
+    'percentage_among_treated': 34567,
+    'percentage_among_therapy_category': 45678,
+    'half_dose_efficacy_mean': 56789,  # use the same seed to correlate the draws for different dosages
+    'standard_dose_efficacy_mean': 56789,
+    'double_dose_efficacy_mean': 56789
+}
+
 
 def patch_external_data(art):
     location = art.load('metadata.locations')[0]
@@ -96,8 +106,10 @@ def transform_data(data_type, data):
     measure_data = [] if spec['measures'] else [data]
 
     for m in spec['measures']:
+        np.random.seed(RANDOM_SEEDS_BY_MEASURE[m])
+        d = np.random.random(1000)
         df = clean_data(data, m)
-        measure_data.append(create_draw_level_data(df, m, spec['columns']))
+        measure_data.append(create_draw_level_data(df, m, spec['columns'], random_draws=d))
 
     return pd.concat(measure_data)
 
@@ -121,7 +133,7 @@ def clean_data(data, measure):
     return data
 
 
-def create_draw_level_data(data, measure, columns_to_keep):
+def create_draw_level_data(data, measure, columns_to_keep, random_draws):
     no_ci_to_convert = data.uncertainty_level.isnull()
 
     to_draw = data[~no_ci_to_convert]
@@ -136,11 +148,9 @@ def create_draw_level_data(data, measure, columns_to_keep):
 
     data = pd.concat([data, draws], axis=1)
 
-    np.random.seed(RANDOM_SEED)
-    d = np.random.random(1000)
     for row in data.loc[~no_ci_to_convert].iterrows():
         dist = norm(loc=row[1]['mean'], scale=row[1]['sd'])
-        draws = dist.ppf(d)
+        draws = dist.ppf(random_draws)
         data.loc[row[0], DRAW_COLUMNS] = draws
 
     return data.filter(columns_to_keep)
