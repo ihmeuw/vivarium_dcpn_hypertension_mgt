@@ -12,7 +12,7 @@ from .globals import HYPERTENSION_DRUGS
 
 
 def convert_filter_transition_to_query_string(row):
-    return f'{row.age_group_start} <= age and age < {row.age_group_end} and sex == {row.sex} and ' \
+    return f'{row.age_group_start} <= age and age < {row.age_group_end} and sex == "{row.sex}" and ' \
         f'{row.systolic_blood_pressure_start} <= systolic_blood_pressure ' \
         f'and systolic_blood_pressure < {row.systolic_blood_pressure_end} and ' \
         f'cvd_risk_cat == {row.cvd_risk_cat}'
