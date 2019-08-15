@@ -43,6 +43,7 @@ components:
 
     vivarium_dcpn_hypertension_mgt.components:
             - CVDRiskAttribute()
+            - TreatmentProfileModel()
 
 configuration:
     input_data:
@@ -81,3 +82,14 @@ configuration:
             by_age: False
             by_sex: False
             by_year: False
+
+    hypertension_drugs:
+        ace_inhibitors_or_angiotensin_ii_blockers: 'angiotensin_ii_blockers' #'ace_inhibitors'
+        other_drugs_efficacy:
+            mono: 6
+            dual: 6
+            triple: 6
+            quad: 6
+        guideline: 'china'  # one of: ["baseline", "china", "aha", "who"]
+
+
