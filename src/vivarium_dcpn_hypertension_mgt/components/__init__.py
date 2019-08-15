@@ -1,1 +1,1 @@
-from .hypertension_medication import CVDRiskAttribute, TreatmentProfileModel
+from .treatment_profile_model import CVDRiskAttribute, TreatmentProfileModel
