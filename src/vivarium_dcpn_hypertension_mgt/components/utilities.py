@@ -154,12 +154,12 @@ def probability_profile_given_sbp_level(sbp_level, proportion_high_sbp, coverage
     profile_names = list(profiles['profile_name'])
     no_treatment_idx = profile_names.index('no_treatment_1')
 
-    def get_profile_probalities(p_treated):
+    def get_profile_probabilities(p_treated):
         p_profile = p_treated * profiles.probability_given_treated.values
         p_profile[no_treatment_idx] = 1.0 - np.sum(p_profile)
         return p_profile
 
-    prob_profiles = prob_treated.apply(get_profile_probalities)
+    prob_profiles = prob_treated.apply(get_profile_probabilities)
 
     return prob_profiles, profile_names
 
