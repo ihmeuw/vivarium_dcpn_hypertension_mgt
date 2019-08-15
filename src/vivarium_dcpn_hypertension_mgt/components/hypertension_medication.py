@@ -5,8 +5,8 @@ import pandas as pd
 from typing import Dict, List
 
 from vivarium.framework.state_machine import State, Transition, Machine
-from . import utilities
-from .globals import HYPERTENSION_DRUGS
+from vivarium_dcpn_hypertension_mgt.components import utilities
+from vivarium_dcpn_hypertension_mgt.components.globals import HYPERTENSION_DRUGS
 
 
 class TreatmentProfile(State):
