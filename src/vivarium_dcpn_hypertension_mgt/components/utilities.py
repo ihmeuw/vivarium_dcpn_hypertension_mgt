@@ -161,7 +161,7 @@ def probability_profile_given_sbp_level(sbp_level, proportion_high_sbp, coverage
 
     prob_profiles = prob_treated.apply(get_profile_probalities)
 
-    return prob_profiles, profile_names #np.stack(prob_profiles.values, axis=0), profile_names
+    return prob_profiles, profile_names
 
 
 def calculate_pop_efficacy(drug_dosages: dict, efficacy_data: pd.DataFrame) -> float:
