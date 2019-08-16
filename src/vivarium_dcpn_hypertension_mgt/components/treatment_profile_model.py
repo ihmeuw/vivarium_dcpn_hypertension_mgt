@@ -262,7 +262,7 @@ class TreatmentProfileModel(Machine):
         return profile_choices
 
     def get_prescribed_medications(self, index):
-        df = pd.DataFrame({d: 0 if d != 'other' else 'none' for d in HYPERTENSION_DRUGS}, index=index)
+        df = pd.DataFrame({d: (0.0 if d != 'other' else 'none') for d in HYPERTENSION_DRUGS}, index=index)
 
         for state, pop_in_state in self._get_state_pops(index):
             if not pop_in_state.empty:
