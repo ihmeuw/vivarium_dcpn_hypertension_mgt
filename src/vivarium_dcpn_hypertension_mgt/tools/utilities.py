@@ -125,6 +125,9 @@ def clean_data(data, measure):
         measure_columns['name'] = 'medication'
         measure_columns['measure'] = 'dosage'
         data.measure = data.measure.apply(lambda s: s.split('_')[0])
+    elif measure == 'utilization_rate':
+        # utilization data isn't complete for younger age groups and will break interpolation
+        data = data[data.age_group_start >= 20]
 
     data = data.rename(columns=measure_columns)
 
