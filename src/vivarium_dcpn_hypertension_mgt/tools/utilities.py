@@ -128,6 +128,7 @@ def clean_data(data, measure):
     elif measure == 'utilization_rate':
         # utilization data isn't complete for younger age groups and will break interpolation
         data = data[data.age_group_start >= 20]
+        data.sd_individual_heterogeneity = data.sd_individual_heterogeneity.apply(lambda s: float(s) if s != '#VALUE!' else 0.0)
 
     data = data.rename(columns=measure_columns)
 
