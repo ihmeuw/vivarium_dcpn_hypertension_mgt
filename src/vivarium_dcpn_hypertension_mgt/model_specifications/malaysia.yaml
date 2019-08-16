@@ -44,6 +44,8 @@ components:
     vivarium_dcpn_hypertension_mgt.components:
             - CVDRiskAttribute()
             - TreatmentProfileModel()
+            - TreatmentEffect()
+
 configuration:
     input_data:
         location: Malaysia

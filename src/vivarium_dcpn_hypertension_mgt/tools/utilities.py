@@ -13,7 +13,6 @@ from .proportion_hypertensive import HYPERTENSION_DATA_FOLDER, HYPERTENSION_HDF_
 
 DRAW_COLUMNS = [f'draw_{i}' for i in range(1000)]
 CI_WIDTH_MAP = {99: 2.58, 95: 1.96, 90: 1.65, 68: 1}
-RANDOM_SEED = 123456
 
 # used to map the measures that need draws and the columns to keep after creating draws for each external data source
 TRANSFORMATION_SPECIFICATION = {
@@ -36,6 +35,16 @@ TRANSFORMATION_SPECIFICATION = {
         'measures': ['half_dose_efficacy_mean', 'standard_dose_efficacy_mean', 'double_dose_efficacy_mean'],
         'columns': ['medication', 'sd_mean', 'dosage'] + DRAW_COLUMNS
     }
+}
+
+RANDOM_SEEDS_BY_MEASURE = {
+    'treated_among_hypertensive': 12345,
+    'control_among_treated': 23456,
+    'percentage_among_treated': 34567,
+    'percentage_among_therapy_category': 45678,
+    'half_dose_efficacy_mean': 56789,  # use the same seed to correlate the draws for different dosages
+    'standard_dose_efficacy_mean': 56789,
+    'double_dose_efficacy_mean': 56789
 }
 
 
@@ -136,7 +145,7 @@ def create_draw_level_data(data, measure, columns_to_keep):
 
     data = pd.concat([data, draws], axis=1)
 
-    np.random.seed(RANDOM_SEED)
+    np.random.seed(RANDOM_SEEDS_BY_MEASURE[measure])
     d = np.random.random(1000)
     for row in data.loc[~no_ci_to_convert].iterrows():
         dist = norm(loc=row[1]['mean'], scale=row[1]['sd'])
