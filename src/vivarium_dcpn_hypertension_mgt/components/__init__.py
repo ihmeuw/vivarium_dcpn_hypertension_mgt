@@ -1,1 +1,1 @@
-from .treatment_profile_model import CVDRiskAttribute, TreatmentProfileModel
+from .treatment_profile_model import CVDRiskAttribute, TreatmentProfileModel, TreatmentEffect

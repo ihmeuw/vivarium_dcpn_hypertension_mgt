@@ -1,3 +1,5 @@
+import scipy
+
 from loguru import logger
 import numpy as np
 import pandas as pd
@@ -209,14 +211,14 @@ class TreatmentProfileModel(Machine):
     def setup(self, builder):
         self.profiles = utilities.load_treatment_profiles(builder)
         domain_filters = utilities.load_domain_filters(builder)
-        self.efficacy_data = utilities.load_efficacy_data(builder)
+        efficacy_data = utilities.load_efficacy_data(builder)
 
         self.ramps = [r for r in TreatmentProfileModel.ramps if r in set(self.profiles.ramp_name)]
         self.ramp_transitions = {k: [r for r in v if r in self.ramps]
                                  for k, v in TreatmentProfileModel.ramp_transitions.items()}
 
         self.treatment_profiles = build_states(self.ramps, self.ramp_transitions,
-                                               self.profiles, domain_filters, self.efficacy_data)
+                                               self.profiles, domain_filters, efficacy_data)
 
         self.add_states(self.treatment_profiles.values())
         super().setup(builder)
@@ -416,4 +418,76 @@ def get_next_states(current_profile: TreatmentProfile, next_ramps: List[str],
     return next_profiles
 
 
+class TreatmentEffect:
 
+    @property
+    def name(self):
+        return 'hypertension_drugs_treatment_effect'
+
+    def setup(self, builder):
+        self.medications = HYPERTENSION_DRUGS
+        self.efficacy_data = utilities.load_efficacy_data(builder).reset_index()
+
+        self.medication_efficacy = pd.Series(index=pd.MultiIndex(levels=[[], [], []],
+                                                                 labels=[[], [], []],
+                                                                 names=['simulant', 'medication', 'dosage']))
+
+        self.shift_column = 'hypertension_drugs_baseline_shift'
+
+        self.population_view = builder.population.get_view([self.shift_column])
+        builder.population.initializes_simulants(self.on_initialize_simulants, creates_columns=[self.shift_column])
+        self.prescribed_medications = builder.value.get_value('prescribed_medications')
+
+        self.randomness = builder.randomness.get_stream('dose_efficacy')
+        self.medication_effects = {m: builder.value.register_value_producer(f'{m}.effect_size',
+                                                                            self.get_medication_effect)
+                                   for m in self.medications}
+
+        self.treatment_effect = builder.value.register_value_producer('hypertension_drugs.effect_size',
+                                                                      self.get_treatment_effect)
+
+        builder.value.register_value_modifier('high_systolic_blood_pressure.exposure', self.treat_sbp)
+
+    def on_initialize_simulants(self, pop_data):
+        self.medication_efficacy = self.medication_efficacy.append(self.determine_medication_efficacy(pop_data.index))
+        prescribed_meds = self.prescribed_medications(pop_data.index)
+        effects = [self.get_medication_effect(prescribed_meds[m], m) for m in self.medications]
+        self.population_view.update(sum(effects))
+
+    def determine_medication_efficacy(self, index):
+        efficacy = []
+
+        for med in self.medications:
+            efficacy_draw = self.randomness.get_draw(index, additional_key=med)
+            med_efficacy = self.efficacy_data.query('medication == @med')
+            for dose in med_efficacy.dosage.unique():
+                dose_efficacy_parameters = med_efficacy.loc[med_efficacy.dosage == dose, ['value', 'sd_mean']].values[0]
+                dose_index = pd.MultiIndex.from_product((index, [med], [dose]),
+                                                        names=('simulant', 'medication', 'dosage'))
+                if dose_efficacy_parameters[1] == 0.0:  # if sd is 0, no need to draw
+                    dose_efficacy = pd.Series(dose_efficacy_parameters[0], index=dose_index)
+                else:
+                    dose_efficacy = pd.Series(scipy.stats.norm.ppf(efficacy_draw, loc=dose_efficacy_parameters[0],
+                                                                   scale=dose_efficacy_parameters[1]),
+                                              index=dose_index)
+                efficacy.append(dose_efficacy)
+
+        return pd.concat(efficacy)
+
+    def get_medication_effect(self, dosages, medication):
+        lookup_index = pd.MultiIndex.from_arrays((dosages.index.values,
+                                                  np.tile(medication, len(dosages)),
+                                                  dosages.values),
+                                                 names=('simulant', 'medication', 'dosage'))
+
+        efficacy = self.medication_efficacy.loc[lookup_index]
+        efficacy.index = efficacy.index.droplevel(['medication', 'dosage'])
+        return efficacy
+
+    def get_treatment_effect(self, index):
+        prescribed_meds = self.prescribed_medications(index)
+        return sum([self.get_medication_effect(prescribed_meds[m], m) for m in self.medications])
+
+    def treat_sbp(self, index, exposure):
+        baseline_shift = self.population_view.get(index)[self.shift_column]
+        return exposure + baseline_shift - self.treatment_effect(index)

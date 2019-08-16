@@ -56,7 +56,7 @@ def load_efficacy_data(builder) -> pd.DataFrame:
 
     zero_dosage = efficacy_data.loc[efficacy_data.dosage == 0.5].copy()
     zero_dosage.dosage = 0.0
-    zero_dosage.append({'dosage': 'none', 'medication': 'other'}, ignore_index=True)
+    zero_dosage = zero_dosage.append({'dosage': 'none', 'medication': 'other'}, ignore_index=True)
     zero_dosage.sd_mean = 0.0
     zero_dosage.value = 0.0
 
@@ -68,7 +68,6 @@ def load_efficacy_data(builder) -> pd.DataFrame:
     other_efficacies['sd_mean'] = 0
 
     efficacy_data = pd.concat([zero_dosage, efficacy_data, other_efficacies])
-
     return efficacy_data.set_index(['dosage', 'medication'])
 
 
