@@ -1,0 +1,254 @@
+sex,age_group_start,age_group_end,location,mean,standard_error,lower,upper,sample_size,measure,recall_type,recall_type_value,visit_type,uncertainty_type,uncertainty_type_value,sd_individual_heterogeneity
+Female,0,1,China,3.52941177,1.75692702,0.08589809,6.97292544,15,continuous,Period: weeks,52,op_avg,Standard error,95,3.872983346
+Male,0,1,China,1.341379,0.82878151,0,2.9657609,912,continuous,Period: weeks,52,op_avg,Standard error,95,30.19933774
+Male,1,10,China,1.83333333,0.46866855,0.91475986,2.7519068,1154,continuous,Period: weeks,52,op_avg,Standard error,95,33.9705755
+Male,10,20,China,1.7,0.44188988,0.83391175,2.56608825,1024,continuous,Period: weeks,52,op_avg,Standard error,95,32
+Female,15,20,China,1.71428571,1.36200602,0,4.38376846,6,continuous,Period: weeks,52,op_avg,Standard error,95,2.449489743
+Female,20,25,China,1.71428571,0.6429921,0.45404435,2.97452708,10,continuous,Period: weeks,52,op_avg,Standard error,95,3.16227766
+Male,20,25,China,0.79166667,0.18749464,0.42418392,1.15914941,863,continuous,Period: weeks,52,op_avg,Standard error,95,29.37686164
+Female,25,30,China,1.67653663,0.32579611,1.037988,2.31508526,7,continuous,Period: weeks,52,op_avg,Standard error,95,2.645751311
+Male,25,30,China,2.40540541,0.74342237,0.94832434,3.86248647,796,continuous,Period: weeks,52,op_avg,Standard error,95,28.21347196
+Female,30,35,China,1.52564103,0.25218425,1.03136898,2.01991307,21,continuous,Period: weeks,52,op_avg,Standard error,95,4.582575695
+Male,30,35,China,1.06001317,0.27262604,0.52567596,1.59435039,5,continuous,Period: weeks,52,op_avg,Standard error,95,2.236067977
+Female,35,40,China,1.69444444,0.20654093,1.28963166,2.09925723,24,continuous,Period: weeks,52,op_avg,Standard error,95,4.898979486
+Male,35,40,China,1.30337079,0.26074266,0.79232457,1.814417,778,continuous,Period: weeks,52,op_avg,Standard error,95,27.89265136
+Female,40,45,China,1.50306749,0.19304805,1.12470026,1.88143471,46,continuous,Period: weeks,52,op_avg,Standard error,95,6.782329983
+Male,40,45,China,1.32876712,0.19080933,0.95478771,1.70274654,689,continuous,Period: weeks,52,op_avg,Standard error,95,26.2488095
+Female,45,50,China,2.4754902,0.35479735,1.78010017,3.17088023,37,continuous,Period: weeks,52,op_avg,Standard error,95,6.08276253
+Male,45,50,China,1.71325428,0.17292277,1.37433189,2.05217668,671,continuous,Period: weeks,52,op_avg,Standard error,95,25.90366769
+Female,50,55,China,2.82760113,0.21410416,2.40796469,3.24723758,78,continuous,Period: weeks,52,op_avg,Standard error,95,8.831760866
+Male,50,55,China,2.05877569,0.19424556,1.67806139,2.43948998,634,continuous,Period: weeks,52,op_avg,Standard error,95,25.17935662
+Female,55,60,China,3.00038841,0.26477208,2.48144468,3.51933214,52,continuous,Period: weeks,52,op_avg,Standard error,95,7.211102551
+Male,55,60,China,2.27281451,0.16633586,1.94680222,2.59882679,469,continuous,Period: weeks,52,op_avg,Standard error,95,21.65640783
+Female,60,65,China,2.75380578,0.26160907,2.24106142,3.26655013,144,continuous,Period: weeks,52,op_avg,Standard error,95,12
+Male,60,65,China,2.78342139,0.26950673,2.25519791,3.31164486,457,continuous,Period: weeks,52,op_avg,Standard error,95,21.37755833
+Female,65,70,China,3.06967462,0.26170591,2.55674047,3.58260876,89,continuous,Period: weeks,52,op_avg,Standard error,95,9.433981132
+Male,65,70,China,2.75541762,0.26454194,2.23692494,3.2739103,228,continuous,Period: weeks,52,op_avg,Standard error,95,15.09966887
+Female,70,75,China,3.17801523,0.3550811,2.48206907,3.8739614,163,continuous,Period: weeks,52,op_avg,Standard error,95,12.76714533
+Male,70,75,China,3.12985416,0.28056145,2.57996381,3.6797445,193,continuous,Period: weeks,52,op_avg,Standard error,95,13.89244399
+Female,75,80,China,4.17075941,0.4558072,3.27739372,5.06412511,146,continuous,Period: weeks,52,op_avg,Standard error,95,12.08304597
+Male,75,80,China,3.51029945,0.3490539,2.82616639,4.19443252,61,continuous,Period: weeks,52,op_avg,Standard error,95,7.810249676
+Female,80,85,China,3.81495735,0.50833258,2.8186438,4.81127089,204,continuous,Period: weeks,52,op_avg,Standard error,95,14.28285686
+Male,80,85,China,3.7013578,0.55122892,2.62096897,4.78174662,65,continuous,Period: weeks,52,op_avg,Standard error,95,8.062257748
+Female,85,90,China,4.35217607,0.71839369,2.94415032,5.76020182,160,continuous,Period: weeks,52,op_avg,Standard error,95,12.64911064
+Male,85,90,China,3.71140569,0.87908403,1.98843266,5.43437873,14,continuous,Period: weeks,52,op_avg,Standard error,95,3.741657387
+Female,90,100,China,7.07142857,1.93280947,3.28319161,10.8596655,1151,continuous,Period: weeks,52,op_avg,Standard error,95,33.92639091
+Male,90,100,China,4.94942467,1.40915486,2.18753191,7.71131744,15,continuous,Period: weeks,52,op_avg,Standard error,95,3.872983346
+Female,15,20,India,2.73125228,0.3066477,2.13023384,3.33227072,226,continuous,Period: weeks,52,op_avg,Standard error,95,15.03329638
+Male,15,20,India,4.48135498,1.0167995,2.48846459,6.47424537,586,continuous,Period: weeks,52,op_avg,Standard error,95,24.20743687
+Female,20,25,India,2.4273952,0.1965132,2.0422364,2.81255399,10,continuous,Period: weeks,52,op_avg,Standard error,95,3.16227766
+Male,20,25,India,1.99345964,0.21026541,1.58134702,2.40557226,529,continuous,Period: weeks,52,op_avg,Standard error,95,23
+Female,25,30,India,2.86563466,0.25927572,2.35746359,3.37380574,460,continuous,Period: weeks,52,op_avg,Standard error,95,21.44761059
+Male,25,30,India,1.66143886,0.2259739,1.21853816,2.10433957,516,continuous,Period: weeks,52,op_avg,Standard error,95,22.71563338
+Female,30,35,India,2.64869745,0.15790349,2.3392123,2.95818261,109,continuous,Period: weeks,52,op_avg,Standard error,95,10.44030651
+Male,30,35,India,2.74931359,0.40231921,1.96078243,3.53784476,439,continuous,Period: weeks,52,op_avg,Standard error,95,20.95232684
+Female,35,40,India,3.24148464,0.26339035,2.72524904,3.75772023,486,continuous,Period: weeks,52,op_avg,Standard error,95,22.04540769
+Male,35,40,India,3.65501244,0.40524875,2.86073949,4.4492854,503,continuous,Period: weeks,52,op_avg,Standard error,95,22.42766149
+Female,40,45,India,3.01941054,0.21855183,2.59105682,3.44776426,108,continuous,Period: weeks,52,op_avg,Standard error,95,10.39230485
+Male,40,45,India,3.00957322,0.43723176,2.15261472,3.86653173,292,continuous,Period: weeks,52,op_avg,Standard error,95,17.08800749
+Female,45,50,India,3.46782756,0.29006238,2.89931574,4.03633939,568,continuous,Period: weeks,52,op_avg,Standard error,95,23.83275058
+Male,45,50,India,2.30278101,0.21606223,1.87930682,2.72625521,356,continuous,Period: weeks,52,op_avg,Standard error,95,18.86796226
+Female,50,55,India,3.56977116,0.25304414,3.07381375,4.06572857,109,continuous,Period: weeks,52,op_avg,Standard error,95,10.44030651
+Male,50,55,India,2.97419816,0.21525801,2.55230021,3.39609611,136,continuous,Period: weeks,52,op_avg,Standard error,95,11.66190379
+Female,55,60,India,3.35978113,0.29030121,2.79080122,3.92876105,597,continuous,Period: weeks,52,op_avg,Standard error,95,24.43358345
+Male,55,60,India,3.24717581,0.33097186,2.59848289,3.89586873,183,continuous,Period: weeks,52,op_avg,Standard error,95,13.52774926
+Female,60,65,India,3.70699649,0.50134771,2.72437304,4.68961994,179,continuous,Period: weeks,52,op_avg,Standard error,95,13.37908816
+Male,60,65,India,3.4734788,0.31845351,2.84932139,4.09763622,82,continuous,Period: weeks,52,op_avg,Standard error,95,9.055385138
+Female,65,70,India,3.22403264,0.2417425,2.75022605,3.69783924,500,continuous,Period: weeks,52,op_avg,Standard error,95,22.36067977
+Male,65,70,India,3.20133753,0.28459025,2.64355088,3.75912418,101,continuous,Period: weeks,52,op_avg,Standard error,95,10.04987562
+Female,70,75,India,3.2833686,0.30254529,2.69039074,3.87634647,173,continuous,Period: weeks,52,op_avg,Standard error,95,13.15294644
+Male,70,75,India,4.63047975,0.83987688,2.98435132,6.27660817,30,continuous,Period: weeks,52,op_avg,Standard error,95,5.477225575
+Female,75,80,India,4.00766367,0.71999233,2.59650463,5.41882271,394,continuous,Period: weeks,52,op_avg,Standard error,95,19.84943324
+Male,75,80,India,3.18445777,0.37257806,2.4542182,3.91469735,35,continuous,Period: weeks,52,op_avg,Standard error,95,5.916079783
+Female,80,85,India,4.14108688,0.59964873,2.96579697,5.31637679,191,continuous,Period: weeks,52,op_avg,Standard error,95,13.82027496
+Male,80,85,India,4.15814102,0.78671025,2.61621726,5.70006478,18,continuous,Period: weeks,52,op_avg,Standard error,95,4.242640687
+Female,85,90,India,2.63020884,0.6024297,1.44946832,3.81094935,737,continuous,Period: weeks,52,op_avg,Standard error,95,27.14774392
+Male,85,90,India,2.68033115,0.57747409,1.54850272,3.81215957,13,continuous,Period: weeks,52,op_avg,Standard error,95,3.605551275
+Female,90,95,India,3.25518184,1.31282522,0.6820917,5.82827199,590,continuous,Period: weeks,52,op_avg,Standard error,95,24.2899156
+Male,90,95,India,4.59128179,1.57423455,1.50583876,7.67672482,6,continuous,Period: weeks,52,op_avg,Standard error,95,2.449489743
+Female,95,100,India,1.45353136,0.74581474,0,2.91530139,663,continuous,Period: weeks,52,op_avg,Standard error,95,25.74878638
+Male,95,100,India,1.50714845,1.43044475,0,4.31076864,6,continuous,Period: weeks,52,op_avg,Standard error,95,2.449489743
+Male,0,0.016,Russian Federation,11.5212333,1.5573813,8.46882209,14.5736446,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Male,0.016,0.076,Russian Federation,11.5223265,1.54363308,8.49686124,14.5477917,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Male,0.076,0.99,Russian Federation,11.536211,1.55887924,8.48086388,14.5915582,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Male,1,4,Russian Federation,11.6452276,1.4878347,8.72912521,14.5613301,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Male,5,9,Russian Federation,11.5567715,1.44642468,8.72183122,14.3917118,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Male,10,14,Russian Federation,10.9611314,1.52498736,7.97221109,13.9500517,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Male,15,19,Russian Federation,9.95985169,1.32929361,7.35448409,12.5652193,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Male,20,24,Russian Federation,8.9172363,1.29496214,6.37915715,11.4553155,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Male,25,29,Russian Federation,8.22700159,1.30756587,5.66421957,10.7897836,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Male,30,34,Russian Federation,7.89120842,1.23949117,5.46185036,10.3205665,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Male,35,39,Russian Federation,7.91046607,1.20938916,5.54010687,10.2808253,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Male,40,44,Russian Federation,8.21317684,1.26325931,5.73723408,10.6891196,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Male,45,49,Russian Federation,8.65864623,1.29915811,6.11234312,11.2049493,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Male,50,54,Russian Federation,9.39136519,1.39466562,6.6578708,12.1248596,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Male,55,59,Russian Federation,10.3288009,1.52511386,7.33963268,13.3179692,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Male,60,64,Russian Federation,11.3212804,1.79835828,7.79656295,14.8459979,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Male,65,69,Russian Federation,12.5314609,2.04607989,8.52121804,16.5417038,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Male,70,74,Russian Federation,14.1229679,2.10461613,9.99799608,18.2479397,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Male,75,79,Russian Federation,15.9231952,2.29768681,11.4198118,20.4265786,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Male,80,84,Russian Federation,17.6721653,2.54280955,12.6883502,22.6559805,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Male,85,89,Russian Federation,19.1409141,2.71298049,13.82357,24.4582581,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Male,90,94,Russian Federation,20.3251351,3.20404357,14.0453252,26.6049451,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Male,95,100,Russian Federation,21.5398917,3.81135311,14.0697769,29.0100065,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Female,0,0.016,Russian Federation,12.1030279,1.19008193,9.77051019,14.4355456,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Female,0.016,0.076,Russian Federation,12.1045393,1.1940435,9.76425702,14.4448216,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Female,0.076,0.99,Russian Federation,12.1238465,1.12222098,9.92433382,14.3233592,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Female,1,4,Russian Federation,12.2097634,1.11077177,10.0326908,14.3868361,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Female,5,9,Russian Federation,12.2797823,1.18212102,9.9628677,14.596697,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Female,10,14,Russian Federation,12.2378888,1.21911462,9.84846801,14.6273095,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Female,15,19,Russian Federation,12.2183066,1.2847694,9.70020483,14.7364084,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Female,20,24,Russian Federation,12.2681927,1.41144675,9.50180794,15.0345775,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Female,25,29,Russian Federation,12.3282081,1.40783678,9.56889877,15.0875175,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Female,30,34,Russian Federation,12.4730553,1.42688191,9.67641819,15.2696925,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Female,35,39,Russian Federation,12.7122948,1.25621984,10.2501491,15.1744404,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Female,40,44,Russian Federation,13.0380578,1.311294,10.4679688,15.6081469,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Female,45,49,Russian Federation,13.4031621,1.33279291,10.790936,16.0153882,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Female,50,54,Russian Federation,13.7485055,1.34390746,11.1144953,16.3825157,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Female,55,59,Russian Federation,14.0562835,1.44663863,11.2209239,16.8916431,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Female,60,64,Russian Federation,14.3506396,1.52284893,11.3659106,17.3353687,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Female,65,69,Russian Federation,14.6981288,1.43687934,11.8818971,17.5143606,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Female,70,74,Russian Federation,15.007976,1.40004852,12.2639314,17.7520207,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Female,75,79,Russian Federation,15.2537022,1.58678663,12.1436575,18.3637468,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Female,80,84,Russian Federation,15.5388697,1.68205136,12.2421096,18.8356298,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Female,85,89,Russian Federation,15.7742806,1.75193003,12.3405608,19.2080004,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Female,90,94,Russian Federation,15.9271951,1.80294959,12.3934789,19.4609114,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Female,95,100,Russian Federation,16.1212812,1.99680347,12.2076184,20.0349441,143968965,continuous,Period: weeks,52,op_avg,Standard error,95,11998.70681
+Both,0,4,Malaysia,7.19,0.34693878,6.5100125,7.86998751,NA,continuous,Period: weeks,52,op_avg,Standard error,95,#VALUE!
+Both,5,9,Malaysia,4.2,0.2755102,3.66000992,4.73999008,NA,continuous,Period: weeks,52,op_avg,Standard error,95,#VALUE!
+Both,10,14,Malaysia,3.12,0.71428571,1.72002573,4.51997428,NA,continuous,Period: weeks,52,op_avg,Standard error,95,#VALUE!
+Both,15,19,Malaysia,3.66,1.2244898,1.2600441,6.0599559,NA,continuous,Period: weeks,52,op_avg,Standard error,95,#VALUE!
+Both,20,24,Malaysia,3.54,0.5,2.56001801,4.51998199,NA,continuous,Period: weeks,52,op_avg,Standard error,95,#VALUE!
+Both,25,29,Malaysia,3.74,0.3622449,3.03001305,4.44998695,NA,continuous,Period: weeks,52,op_avg,Standard error,95,#VALUE!
+Both,30,34,Malaysia,4.44,0.70408163,3.06002536,5.81997464,NA,continuous,Period: weeks,52,op_avg,Standard error,95,#VALUE!
+Both,35,39,Malaysia,3.36,0.31122449,2.75001121,3.96998879,NA,continuous,Period: weeks,52,op_avg,Standard error,95,#VALUE!
+Both,40,44,Malaysia,4.49,0.57653061,3.36002076,5.61997924,NA,continuous,Period: weeks,52,op_avg,Standard error,95,#VALUE!
+Both,45,49,Malaysia,5.58,0.74489796,4.12002683,7.03997317,NA,continuous,Period: weeks,52,op_avg,Standard error,95,#VALUE!
+Both,50,54,Malaysia,4.9,0.80102041,3.33002885,6.46997115,NA,continuous,Period: weeks,52,op_avg,Standard error,95,#VALUE!
+Both,55,59,Malaysia,4.58,0.44897959,3.70001617,5.45998383,NA,continuous,Period: weeks,52,op_avg,Standard error,95,#VALUE!
+Both,60,64,Malaysia,4.68,0.75510204,3.2000272,6.15997281,NA,continuous,Period: weeks,52,op_avg,Standard error,95,#VALUE!
+Both,65,69,Malaysia,5.62,0.93367347,3.79003363,7.44996637,NA,continuous,Period: weeks,52,op_avg,Standard error,95,#VALUE!
+Both,70,74,Malaysia,5.75,0.97959184,3.83003528,7.66996472,NA,continuous,Period: weeks,52,op_avg,Standard error,95,#VALUE!
+Both,75,100,Malaysia,8.6,1.40306122,5.85005053,11.3499495,NA,continuous,Period: weeks,52,op_avg,Standard error,95,#VALUE!
+Male,0,0.016,South Africa,2.67696698,0.35735329,1.9765674,3.37736656,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Male,0.016,0.076,South Africa,2.67377501,0.35122363,1.98538934,3.36216068,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Male,0.076,0.99,South Africa,2.63290143,0.36087874,1.9255921,3.34021076,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Male,1,4,South Africa,2.39087087,0.29651332,1.80971544,2.97202629,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Male,5,9,South Africa,1.96785304,0.28437214,1.41049389,2.5252122,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Male,10,14,South Africa,1.63203032,0.25386408,1.13446587,2.12959477,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Male,15,19,South Africa,1.50281578,0.25216624,1.00857902,1.99705253,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Male,20,24,South Africa,1.59033088,0.273196,1.05487655,2.1257852,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Male,25,29,South Africa,1.87727435,0.29741176,1.29435801,2.46019069,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Male,30,34,South Africa,2.28432565,0.38416607,1.53137399,3.03727732,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Male,35,39,South Africa,2.75454253,0.41919248,1.93294037,3.57614468,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Male,40,44,South Africa,3.25093084,0.4775761,2.31489888,4.1869628,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Male,45,49,South Africa,3.7134472,0.56270075,2.610574,4.81632041,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Male,50,54,South Africa,4.25670737,0.60716616,3.06668356,5.44673118,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Male,55,59,South Africa,4.88383597,0.69798198,3.51581643,6.25185552,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Male,60,64,South Africa,5.43892627,0.89449178,3.6857546,7.19209795,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Male,65,69,South Africa,5.92137412,0.9311378,4.09637757,7.74637068,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Male,70,74,South Africa,6.48268831,0.97873108,4.56441064,8.40096599,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Male,75,79,South Africa,6.99363,1.03644204,4.96224094,9.02501907,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Male,80,84,South Africa,7.27321949,1.05018563,5.21489349,9.3315455,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Male,85,89,South Africa,7.45039752,1.02220669,5.44690922,9.45388582,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Male,90,94,South Africa,7.85174117,1.25080388,5.40021061,10.3032717,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Male,95,100,South Africa,8.54967891,1.62295471,5.36874613,11.7306117,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Female,0,0.016,South Africa,2.62594985,0.33946865,1.96060353,3.29129618,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Female,0.016,0.076,South Africa,2.62388807,0.3379922,1.96143553,3.2863406,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Female,0.076,0.99,South Africa,2.59754239,0.31720748,1.97582716,3.21925762,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Female,1,4,South Africa,2.45614123,0.30443649,1.85945667,3.05282578,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Female,5,9,South Africa,2.20414931,0.31853547,1.57983126,2.82846736,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Female,10,14,South Africa,2.03422907,0.30959597,1.42743213,2.64102602,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Female,15,19,South Africa,2.09276685,0.34759039,1.4115022,2.77403149,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Female,20,24,South Africa,2.38936977,0.3883433,1.6282309,3.15050864,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Female,25,29,South Africa,2.88149423,0.40989828,2.07810836,3.68488009,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Female,30,34,South Africa,3.45110928,0.50841777,2.45462877,4.44758979,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Female,35,39,South Africa,4.0034887,0.54389681,2.93747054,5.06950686,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Female,40,44,South Africa,4.5602598,0.63411891,3.31740957,5.80311002,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Female,45,49,South Africa,5.10502243,0.71546698,3.70273291,6.50731195,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Female,50,54,South Africa,5.73413898,0.7804608,4.20446391,7.26381404,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Female,55,59,South Africa,6.39514369,0.90321017,4.62488429,8.16540309,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Female,60,64,South Africa,6.90486655,1.02288041,4.90005778,8.90967532,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Female,65,69,South Africa,7.33504671,1.09457642,5.18971635,9.48037707,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Female,70,74,South Africa,7.76740143,1.08369345,5.6434013,9.89140155,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Female,75,79,South Africa,8.06623949,1.15956961,5.79352481,10.3389542,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Female,80,84,South Africa,8.14526333,1.16397723,5.86390987,10.4266168,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Female,85,89,South Africa,7.94635649,1.10388529,5.78278108,10.1099319,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Female,90,94,South Africa,7.60884996,1.20804064,5.24113381,9.97656612,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Female,95,100,South Africa,7.54819843,1.42333178,4.7585194,10.3378775,51060295,continuous,Period: weeks,52,op_avg,Standard error,95,7145.648676
+Female,15,20,Ghana,1.5,0.69721669,0.1334804,2.8665196,6,continuous,Period: weeks,52,op_avg,Standard error,95,2.449489743
+Male,15,20,Ghana,1.28571429,0.43840358,0.42645907,2.14496951,384,continuous,Period: weeks,52,op_avg,Standard error,95,19.59591794
+Female,20,25,Ghana,1.38095238,0.45341851,0.49226843,2.26963633,7,continuous,Period: weeks,52,op_avg,Standard error,95,2.645751311
+Male,20,25,Ghana,1,0.35988895,0.29463063,1.70536937,272,continuous,Period: weeks,52,op_avg,Standard error,95,16.4924225
+Female,25,30,Ghana,1.48275862,0.3402491,0.81588263,2.14963461,21,continuous,Period: weeks,52,op_avg,Standard error,95,4.582575695
+Male,25,30,Ghana,1.51219512,0.28766502,0.94838205,2.07600819,324,continuous,Period: weeks,52,op_avg,Standard error,95,18
+Female,30,35,Ghana,1.48979592,0.30998601,0.88223451,2.09735733,13,continuous,Period: weeks,52,op_avg,Standard error,95,3.605551275
+Male,30,35,Ghana,1.42372881,0.30470147,0.82652492,2.02093271,236,continuous,Period: weeks,52,op_avg,Standard error,95,15.3622915
+Female,35,40,Ghana,1.79710145,0.32591628,1.15831729,2.43588561,29,continuous,Period: weeks,52,op_avg,Standard error,95,5.385164807
+Male,35,40,Ghana,1.34384875,0.17326188,1.00426171,1.6834358,278,continuous,Period: weeks,52,op_avg,Standard error,95,16.673332
+Female,40,45,Ghana,1.48,0.17379307,1.13937184,1.82062816,41,continuous,Period: weeks,52,op_avg,Standard error,95,6.403124237
+Male,40,45,Ghana,1.52761324,0.2456379,1.0461718,2.00905467,321,continuous,Period: weeks,52,op_avg,Standard error,95,17.91647287
+Female,45,50,Ghana,2.125,0.31594798,1.50575334,2.74424666,49,continuous,Period: weeks,52,op_avg,Standard error,95,7
+Male,45,50,Ghana,1.2815534,0.20523508,0.87930003,1.68380677,252,continuous,Period: weeks,52,op_avg,Standard error,95,15.87450787
+Female,50,55,Ghana,1.68189242,0.12603057,1.43487705,1.92890779,59,continuous,Period: weeks,52,op_avg,Standard error,95,7.681145748
+Male,50,55,Ghana,1.50445375,0.12594061,1.25761469,1.7512928,183,continuous,Period: weeks,52,op_avg,Standard error,95,13.52774926
+Female,55,60,Ghana,1.8723841,0.16530098,1.54840014,2.19636807,69,continuous,Period: weeks,52,op_avg,Standard error,95,8.306623863
+Male,55,60,Ghana,1.78831505,0.14286455,1.50830568,2.06832442,157,continuous,Period: weeks,52,op_avg,Standard error,95,12.52996409
+Female,60,65,Ghana,2.08088235,0.16925395,1.74915071,2.41261399,86,continuous,Period: weeks,52,op_avg,Standard error,95,9.273618495
+Male,60,65,Ghana,1.75352465,0.15291359,1.45381951,2.05322978,112,continuous,Period: weeks,52,op_avg,Standard error,95,10.58300524
+Female,65,70,Ghana,2.04661017,0.19021278,1.67379997,2.41942037,75,continuous,Period: weeks,52,op_avg,Standard error,95,8.660254038
+Male,65,70,Ghana,2.43935966,0.22621619,1.99598408,2.88273524,90,continuous,Period: weeks,52,op_avg,Standard error,95,9.486832981
+Female,70,75,Ghana,2.30262301,0.17414718,1.96130082,2.6439452,75,continuous,Period: weeks,52,op_avg,Standard error,95,8.660254038
+Male,70,75,Ghana,1.94897613,0.17951832,1.59712669,2.30082558,68,continuous,Period: weeks,52,op_avg,Standard error,95,8.246211251
+Female,75,80,Ghana,2.62138239,0.23035851,2.16988801,3.07287678,72,continuous,Period: weeks,52,op_avg,Standard error,95,8.485281374
+Male,75,80,Ghana,1.88535032,0.211944,1.46994771,2.30075292,45,continuous,Period: weeks,52,op_avg,Standard error,95,6.708203932
+Female,80,85,Ghana,1.76785714,0.210752,1.35479081,2.18092347,103,continuous,Period: weeks,52,op_avg,Standard error,95,10.14889157
+Male,80,85,Ghana,2.1,0.25483262,1.60053725,2.59946275,24,continuous,Period: weeks,52,op_avg,Standard error,95,4.898979486
+Female,85,90,Ghana,2.14705882,0.29038241,1.57791976,2.71619789,344,continuous,Period: weeks,52,op_avg,Standard error,95,18.54723699
+Male,85,90,Ghana,1.93333333,0.36666887,1.21467556,2.6519911,34,continuous,Period: weeks,52,op_avg,Standard error,95,5.830951895
+Female,90,95,Ghana,2.95833333,0.83073473,1.33012318,4.58654348,465,continuous,Period: weeks,52,op_avg,Standard error,95,21.56385865
+Male,90,95,Ghana,2.02941177,0.43069768,1.18525983,2.8735637,16,continuous,Period: weeks,52,op_avg,Standard error,95,4
+Female,95,100,Ghana,3.0625,0.49686978,2.08865313,4.03634687,328,continuous,Period: weeks,52,op_avg,Standard error,95,18.11077028
+Male,95,100,Ghana,1.27272727,0.31862693,0.64822997,1.89722458,11,continuous,Period: weeks,52,op_avg,Standard error,95,3.31662479
+Female,0,1,Nigeria,0.47748077,0.22098599,0.04435621,0.91060535,103,continuous,Period: weeks,52,consult_avg,Standard error,95,10.14889157
+Male,0,1,Nigeria,1.97121031,0.54114367,0.9105882,3.0318324,582,continuous,Period: weeks,52,consult_avg,Standard error,95,24.12467616
+Female,1,5,Nigeria,1.37287562,0.21491428,0.95165136,1.79409989,119,continuous,Period: weeks,52,consult_avg,Standard error,95,10.90871211
+Male,1,5,Nigeria,0.96548358,0.1885743,0.59588474,1.33508242,688,continuous,Period: weeks,52,consult_avg,Standard error,95,26.2297541
+Female,5,10,Nigeria,0.81820557,0.12435129,0.57448152,1.06192962,534,continuous,Period: weeks,52,consult_avg,Standard error,95,23.10844002
+Male,5,10,Nigeria,0.88897285,0.12961225,0.6349375,1.14300819,535,continuous,Period: weeks,52,consult_avg,Standard error,95,23.13006701
+Female,10,15,Nigeria,0.89070573,0.13518183,0.62575423,1.15565723,483,continuous,Period: weeks,52,consult_avg,Standard error,95,21.97726098
+Male,10,15,Nigeria,0.82004814,0.12738314,0.57038177,1.06971452,512,continuous,Period: weeks,52,consult_avg,Standard error,95,22.627417
+Female,15,20,Nigeria,1.04498294,0.13884047,0.77286063,1.31710524,1039,continuous,Period: weeks,52,consult_avg,Standard error,95,32.23352292
+Male,15,20,Nigeria,0.83622527,0.12921203,0.58297435,1.08947621,339,continuous,Period: weeks,52,consult_avg,Standard error,95,18.41195264
+Female,20,25,Nigeria,1.75688507,0.22764999,1.31069929,2.20307084,880,continuous,Period: weeks,52,consult_avg,Standard error,95,29.66479395
+Male,20,25,Nigeria,1.15823114,0.1722733,0.8205817,1.49588059,511,continuous,Period: weeks,52,consult_avg,Standard error,95,22.60530911
+Female,25,30,Nigeria,4.43583683,0.31233389,3.82367366,5.04800002,1009,continuous,Period: weeks,52,consult_avg,Standard error,95,31.76476035
+Male,25,30,Nigeria,1.97310905,0.2099237,1.56166615,2.38455195,342,continuous,Period: weeks,52,consult_avg,Standard error,95,18.49324201
+Female,30,35,Nigeria,6.13466811,0.32296606,5.50166626,6.76766995,874,continuous,Period: weeks,52,consult_avg,Standard error,95,29.563491
+Male,30,35,Nigeria,2.29280962,0.25209633,1.79870991,2.78690935,333,continuous,Period: weeks,52,consult_avg,Standard error,95,18.24828759
+Female,35,40,Nigeria,7.04732756,0.33886662,6.3831612,7.71149392,906,continuous,Period: weeks,52,consult_avg,Standard error,95,30.09983389
+Male,35,40,Nigeria,2.51727273,0.2364859,2.05376889,2.98077657,272,continuous,Period: weeks,52,consult_avg,Standard error,95,16.4924225
+Female,40,45,Nigeria,7.32474434,0.32799664,6.68188274,7.96760593,826,continuous,Period: weeks,52,consult_avg,Standard error,95,28.74021573
+Male,40,45,Nigeria,2.99504773,0.29855184,2.40989689,3.58019858,305,continuous,Period: weeks,52,consult_avg,Standard error,95,17.4642492
+Female,45,50,Nigeria,7.43002537,0.35658334,6.73113485,8.12891589,665,continuous,Period: weeks,52,consult_avg,Standard error,95,25.78759392
+Male,45,50,Nigeria,2.73001741,0.29523789,2.15136178,3.30867303,169,continuous,Period: weeks,52,consult_avg,Standard error,95,13
+Female,50,55,Nigeria,7.17871111,0.40737588,6.38026906,7.97715317,753,continuous,Period: weeks,52,consult_avg,Standard error,95,27.44084547
+Male,50,55,Nigeria,2.92652264,0.32965709,2.28040661,3.57263865,140,continuous,Period: weeks,52,consult_avg,Standard error,95,11.83215957
+Female,55,60,Nigeria,7.67255225,0.45866919,6.77357716,8.57152734,710,continuous,Period: weeks,52,consult_avg,Standard error,95,26.64582519
+Male,55,60,Nigeria,2.7011493,0.35671292,2.00200481,3.40029377,87,continuous,Period: weeks,52,consult_avg,Standard error,95,9.327379053
+Female,60,65,Nigeria,6.64339086,0.44280046,5.7755179,7.5112638,762,continuous,Period: weeks,52,consult_avg,Standard error,95,27.60434748
+Male,60,65,Nigeria,3.74834815,0.44694857,2.87234506,4.62435123,116,continuous,Period: weeks,52,consult_avg,Standard error,95,10.77032961
+Female,65,70,Nigeria,6.59100659,0.56229252,5.4889335,7.69307968,792,continuous,Period: weeks,52,consult_avg,Standard error,95,28.14249456
+Male,65,70,Nigeria,3.7945426,0.50062329,2.81333897,4.77574621,66,continuous,Period: weeks,52,consult_avg,Standard error,95,8.124038405
+Female,70,75,Nigeria,7.79468596,0.64172199,6.53693399,9.05243795,656,continuous,Period: weeks,52,consult_avg,Standard error,95,25.61249695
+Male,70,75,Nigeria,6.50849151,0.80797051,4.92489839,8.09208462,37,continuous,Period: weeks,52,consult_avg,Standard error,95,6.08276253
+Female,75,80,Nigeria,8.40972171,0.94160106,6.56421753,10.2552259,848,continuous,Period: weeks,52,consult_avg,Standard error,95,29.12043956
+Male,75,80,Nigeria,5.95779967,1.13287034,3.7374146,8.17818474,21,continuous,Period: weeks,52,consult_avg,Standard error,95,4.582575695
+Female,80,85,Nigeria,8.10811689,1.08361555,5.98426943,10.2319643,710,continuous,Period: weeks,52,consult_avg,Standard error,95,26.64582519
+Male,80,85,Nigeria,7.78465171,1.46702387,4.90933776,10.6599657,18,continuous,Period: weeks,52,consult_avg,Standard error,95,4.242640687
+Female,85,90,Nigeria,8.53966304,2.02983219,4.56126503,12.518061,828,continuous,Period: weeks,52,consult_avg,Standard error,95,28.77498914
+Male,85,90,Nigeria,16.7416203,3.47142078,9.93776056,23.54548,7,continuous,Period: weeks,52,consult_avg,Standard error,95,2.645751311
+Female,90,95,Nigeria,8.32150072,2.6791863,3.07039207,13.5726094,589,continuous,Period: weeks,52,consult_avg,Standard error,95,24.2693222
+Male,90,95,Nigeria,11.1428571,4.86325204,1.61105829,20.674656,17,continuous,Period: weeks,52,consult_avg,Standard error,95,4.123105626
+Female,95,100,Nigeria,11.6702063,3.36549326,5.07396067,18.2664519,778,continuous,Period: weeks,52,consult_avg,Standard error,95,27.89265136
+Male,95,100,Nigeria,3.9,1.88392178,0.20758117,7.59241883,10,continuous,Period: weeks,52,consult_avg,Standard error,95,3.16227766
