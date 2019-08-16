@@ -45,6 +45,7 @@ components:
             - CVDRiskAttribute()
             - TreatmentProfileModel()
             - TreatmentEffect()
+            - HealthcareUtilization()
 
 configuration:
     input_data:
