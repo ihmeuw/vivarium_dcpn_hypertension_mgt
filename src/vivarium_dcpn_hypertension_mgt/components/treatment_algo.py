@@ -36,8 +36,8 @@ class Adherence:
         self.df_ad_data['appt_ad'] = mask.apply(lambda x: self._thresholds.loc[x].follow_up)
 
     def get_rx_fill(self, index) -> pd.Series:
-        return self.rand_rx_fill.get_draw(index) < self.df_ad_data.rx_ad
+        return self.rand_rx_fill.get_draw(index) < self.df_ad_data.rx_ad.loc[index]
 
     def get_appt_followup(self, index) -> pd.Series:
-        return self.rand_appt_followup.get_draw(index) < self.df_ad_data.appt_ad
+        return self.rand_appt_followup.get_draw(index) < self.df_ad_data.appt_ad.loc[index]
 
