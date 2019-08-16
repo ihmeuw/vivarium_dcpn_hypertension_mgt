@@ -26,4 +26,9 @@ class HealthcareUtilization:
     def get_utilization_rate(self, index):
         params = self.utilization_data(index)
         distributions = scipy.stats.norm(loc=params.value, scale=params.sd_individual_heterogeneity)
-        return pd.Series(distributions.ppf(self._propensity[index]), index=index)
+        utilization = pd.Series(distributions.ppf(self._propensity[index]), index=index)
+        utilization.loc[utilization < 0] = 0.0
+        return utilization
+
+
+
