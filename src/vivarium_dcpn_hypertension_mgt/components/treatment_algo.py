@@ -26,8 +26,8 @@ class Adherence:
 
         builder.population.initializes_simulants(self.on_initialize_simulants)
 
-        builder.value.register_value_producer('rx_fill', source=self.get_rx_fill)
-        builder.value.register_value_producer('appt_followup', source=self.get_appt_followup)
+        builder.value.register_value_producer('rx_fill.adherence', source=self.get_rx_fill)
+        builder.value.register_value_producer('appt_followup.adherence', source=self.get_appt_followup)
 
     def on_initialize_simulants(self, pop_data):
         # bin everyone into 1 of the 4 adherence catagories
