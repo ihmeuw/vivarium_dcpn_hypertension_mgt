@@ -31,12 +31,13 @@ class Adherence:
 
     def on_initialize_simulants(self, pop_data):
         # bin everyone into 1 of the 4 adherence catagories
-        self.df_ad_data = self.rand_threshold_creation.choice(pop_data.index, self._thresholds.index,
-                                                              self._thresholds.proportion)
+        mask = self.rand_threshold_creation.choice(pop_data.index, self._thresholds.index, self._thresholds.proportion)
+        self.df_ad_data['rx_ad'] = mask.apply(lambda x: self._thresholds.loc[x].prescription_fill)
+        self.df_ad_data['appt_ad'] = mask.apply(lambda x: self._thresholds.loc[x].follow_up)
 
     def get_rx_fill(self, index) -> pd.Series:
-        return self.df_ad_data.loc[self.rand_rx_fill.get_draw(index) < self.df_ad_data.rx].index
+        return self.rand_rx_fill.get_draw(index) < self.df_ad_data.rx_ad
 
     def get_appt_followup(self, index) -> pd.Series:
-        pass
+        return self.rand_appt_followup.get_draw(index) < self.df_ad_data.appt_ad
 

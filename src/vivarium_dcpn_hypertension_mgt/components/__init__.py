@@ -1,1 +1,2 @@
 from .treatment_profile_model import CVDRiskAttribute, TreatmentProfileModel
+from .treatment_algo import Adherence
