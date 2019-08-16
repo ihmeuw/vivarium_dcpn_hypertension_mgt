@@ -35,6 +35,10 @@ TRANSFORMATION_SPECIFICATION = {
     'drug_efficacy': {
         'measures': ['half_dose_efficacy_mean', 'standard_dose_efficacy_mean', 'double_dose_efficacy_mean'],
         'columns': ['medication', 'sd_mean', 'dosage'] + DRAW_COLUMNS
+    },
+    'healthcare_access': {
+        'measures': ['utilization_rate'],
+        'columns': ['sex', 'age_group_start', 'age_group_end', 'location', 'sd_individual_heterogeneity'] + DRAW_COLUMNS
     }
 }
 
@@ -122,11 +126,15 @@ def clean_data(data, measure):
 
 
 def create_draw_level_data(data, measure, columns_to_keep):
-    no_ci_to_convert = data.uncertainty_level.isnull()
 
-    to_draw = data[~no_ci_to_convert]
-    ci_widths = to_draw.uncertainty_level.map(lambda l: CI_WIDTH_MAP.get(l, 0) * 2)
-    data.loc[~no_ci_to_convert, 'sd'] = (to_draw['ub'] - to_draw['lb']) / ci_widths
+    if 'standard_error' in data:
+        data = data.rename(columns={'standard_error': 'sd'})
+    else:
+        no_ci_to_convert = data.uncertainty_level.isnull()
+
+        to_draw = data[~no_ci_to_convert]
+        ci_widths = to_draw.uncertainty_level.map(lambda l: CI_WIDTH_MAP.get(l, 0) * 2)
+        data.loc[~no_ci_to_convert, 'sd'] = (to_draw['ub'] - to_draw['lb']) / ci_widths
 
     if measure == 'percentage_among_therapy_category':
         data = collapse_other_drug_profiles(data)
