@@ -226,17 +226,20 @@ class TreatmentProfileModel(Machine):
         self.proportion_above_hypertensive_threshold = builder.lookup.build_table(
             builder.data.load('risk_factor.high_systolic_blood_pressure.proportion_above_hypertensive_threshold'))
 
-        sbp = builder.value.get_value('high_systolic_blood_pressure.exposure')
-
-        self.raw_sbp = lambda index: pd.Series(sbp.source(index), index=index)
+        self.sbp = builder.value.get_value('high_systolic_blood_pressure.exposure')
+        self.raw_sbp = lambda index: pd.Series(self.sbp.source(index), index=index)
 
         self.randomness = builder.randomness.get_stream('initial_treatment_profile')
 
-        self.population_view = builder.population.get_view([self.state_column])
+        self.population_view = builder.population.get_view(['age', 'sex', self.state_column])
         builder.population.initializes_simulants(self.on_initialize_simulants, creates_columns=[self.state_column])
+
+        self.cvd_risk_cat = builder.value.get_value('cvd_risk_category')
+        self.valid_transition_filter = self.get_valid_transition_filter()
 
     def on_initialize_simulants(self, pop_data):
         initial_tx_profiles = self.get_initial_profiles(pop_data.index)
+        initial_tx_profiles.name = self.state_column
         self.population_view.update(initial_tx_profiles)
 
     def get_initial_profiles(self, index):
@@ -256,6 +259,20 @@ class TreatmentProfileModel(Machine):
         profile_choices = self.randomness.choice(index, choices=profile_names, p=profile_probabilities)
 
         return profile_choices
+
+    def get_valid_transition_filter(self):
+        valid_transitions = []
+        for state in self.states:
+            for transition in state.transition_set:
+                if not isinstance(transition.output_state, NullTreatmentProfile):
+                    valid_transitions.append(transition.domain_filter)
+        return " or ".join(set(valid_transitions))
+
+    def filter_for_next_valid_state(self, index):
+        characteristics = self.population_view.subview(['age', 'sex']).get(index)
+        characteristics['systolic_blood_pressure'] = self.sbp(index)
+        characteristics['cvd_risk_cat'] = self.cvd_risk_cat(index)
+        return characteristics.query(self.valid_transition_filter).index
 
     def validate(self):
         for state in self.states:
