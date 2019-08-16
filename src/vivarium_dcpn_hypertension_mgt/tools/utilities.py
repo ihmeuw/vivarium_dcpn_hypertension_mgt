@@ -48,7 +48,8 @@ RANDOM_SEEDS_BY_MEASURE = {
     'percentage_among_therapy_category': 45678,
     'half_dose_efficacy_mean': 56789,  # use the same seed to correlate the draws for different dosages
     'standard_dose_efficacy_mean': 56789,
-    'double_dose_efficacy_mean': 56789
+    'double_dose_efficacy_mean': 56789,
+    'utilization_rate': 67891,
 }
 
 
@@ -138,12 +139,13 @@ def create_draw_level_data(data, measure, columns_to_keep):
 
     if 'standard_error' in data:
         data = data.rename(columns={'standard_error': 'sd'})
+        nothing_to_draw = data.sd.isnull()
     else:
-        no_ci_to_convert = data.uncertainty_level.isnull()
+        nothing_to_draw = data.uncertainty_level.isnull()
 
-        to_draw = data[~no_ci_to_convert]
+        to_draw = data[~nothing_to_draw]
         ci_widths = to_draw.uncertainty_level.map(lambda l: CI_WIDTH_MAP.get(l, 0) * 2)
-        data.loc[~no_ci_to_convert, 'sd'] = (to_draw['ub'] - to_draw['lb']) / ci_widths
+        data.loc[~nothing_to_draw, 'sd'] = (to_draw['ub'] - to_draw['lb']) / ci_widths
 
     if measure == 'percentage_among_therapy_category':
         data = collapse_other_drug_profiles(data)
@@ -155,7 +157,7 @@ def create_draw_level_data(data, measure, columns_to_keep):
 
     np.random.seed(RANDOM_SEEDS_BY_MEASURE[measure])
     d = np.random.random(1000)
-    for row in data.loc[~no_ci_to_convert].iterrows():
+    for row in data.loc[~nothing_to_draw].iterrows():
         dist = norm(loc=row[1]['mean'], scale=row[1]['sd'])
         draws = dist.ppf(d)
         data.loc[row[0], DRAW_COLUMNS] = draws
