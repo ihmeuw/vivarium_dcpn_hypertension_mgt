@@ -44,8 +44,8 @@ components:
     vivarium_dcpn_hypertension_mgt.components:
             - CVDRiskAttribute()
             - TreatmentProfileModel()
+            - TreatmentAlgorithm()
             - TreatmentEffect()
-            - HealthcareUtilization()
 
 configuration:
     input_data:
