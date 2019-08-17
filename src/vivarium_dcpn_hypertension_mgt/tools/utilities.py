@@ -34,6 +34,10 @@ TRANSFORMATION_SPECIFICATION = {
     'drug_efficacy': {
         'measures': ['half_dose_efficacy_mean', 'standard_dose_efficacy_mean', 'double_dose_efficacy_mean'],
         'columns': ['medication', 'sd_mean', 'dosage'] + DRAW_COLUMNS
+    },
+    'healthcare_access': {
+        'measures': ['utilization_rate'],
+        'columns': ['sex', 'age_group_start', 'age_group_end', 'location', 'sd_individual_heterogeneity'] + DRAW_COLUMNS
     }
 }
 
@@ -44,7 +48,8 @@ RANDOM_SEEDS_BY_MEASURE = {
     'percentage_among_therapy_category': 45678,
     'half_dose_efficacy_mean': 56789,  # use the same seed to correlate the draws for different dosages
     'standard_dose_efficacy_mean': 56789,
-    'double_dose_efficacy_mean': 56789
+    'double_dose_efficacy_mean': 56789,
+    'utilization_rate': 67891,
 }
 
 
@@ -120,6 +125,10 @@ def clean_data(data, measure):
         measure_columns['name'] = 'medication'
         measure_columns['measure'] = 'dosage'
         data.measure = data.measure.apply(lambda s: s.split('_')[0])
+    elif measure == 'utilization_rate':
+        # utilization data isn't complete for younger age groups and will break interpolation
+        data = data[data.age_group_start >= 20]
+        data.sd_individual_heterogeneity = data.sd_individual_heterogeneity.apply(lambda s: float(s) if s != '#VALUE!' else 0.0)
 
     data = data.rename(columns=measure_columns)
 
@@ -131,11 +140,16 @@ def clean_data(data, measure):
 
 
 def create_draw_level_data(data, measure, columns_to_keep):
-    no_ci_to_convert = data.uncertainty_level.isnull()
 
-    to_draw = data[~no_ci_to_convert]
-    ci_widths = to_draw.uncertainty_level.map(lambda l: CI_WIDTH_MAP.get(l, 0) * 2)
-    data.loc[~no_ci_to_convert, 'sd'] = (to_draw['ub'] - to_draw['lb']) / ci_widths
+    if 'standard_error' in data:
+        data = data.rename(columns={'standard_error': 'sd'})
+        nothing_to_draw = data.sd.isnull()
+    else:
+        nothing_to_draw = data.uncertainty_level.isnull()
+
+        to_draw = data[~nothing_to_draw]
+        ci_widths = to_draw.uncertainty_level.map(lambda l: CI_WIDTH_MAP.get(l, 0) * 2)
+        data.loc[~nothing_to_draw, 'sd'] = (to_draw['ub'] - to_draw['lb']) / ci_widths
 
     if measure == 'percentage_among_therapy_category':
         data = collapse_other_drug_profiles(data)
@@ -147,7 +161,7 @@ def create_draw_level_data(data, measure, columns_to_keep):
 
     np.random.seed(RANDOM_SEEDS_BY_MEASURE[measure])
     d = np.random.random(1000)
-    for row in data.loc[~no_ci_to_convert].iterrows():
+    for row in data.loc[~nothing_to_draw].iterrows():
         dist = norm(loc=row[1]['mean'], scale=row[1]['sd'])
         draws = dist.ppf(d)
         data.loc[row[0], DRAW_COLUMNS] = draws

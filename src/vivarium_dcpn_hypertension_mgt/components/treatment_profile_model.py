@@ -459,6 +459,8 @@ class TreatmentEffect:
                                                                             self.get_medication_effect)
                                    for m in self.medications}
 
+        self.prescription_filled = builder.value.get_value('rx_fill.currently_filled')
+
         self.treatment_effect = builder.value.register_value_producer('hypertension_drugs.effect_size',
                                                                       self.get_treatment_effect)
 
@@ -498,7 +500,7 @@ class TreatmentEffect:
 
         efficacy = self.medication_efficacy.loc[lookup_index]
         efficacy.index = efficacy.index.droplevel(['medication', 'dosage'])
-        return efficacy
+        return efficacy * self.prescription_filled(dosages.index)
 
     def get_treatment_effect(self, index):
         prescribed_meds = self.prescribed_medications(index)

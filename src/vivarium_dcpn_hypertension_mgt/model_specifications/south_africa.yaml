@@ -9,7 +9,7 @@ components:
         population:
             - BasePopulation()
             - Mortality()
-            - FertilityCrudeBirthRate()
+
         disease.models:
             - SI("ischemic_heart_disease")
             - SI("ischemic_stroke")
@@ -44,6 +44,7 @@ components:
     vivarium_dcpn_hypertension_mgt.components:
             - CVDRiskAttribute()
             - TreatmentProfileModel()
+            - TreatmentAlgorithm()
             - TreatmentEffect()
 
 configuration:
