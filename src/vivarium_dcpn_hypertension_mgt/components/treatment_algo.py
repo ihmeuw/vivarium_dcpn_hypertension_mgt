@@ -48,7 +48,7 @@ class Adherence:
 class MeasuredSBP:
     @property
     def name(self):
-        return "high_systolic_blood_pressure"
+        return "high_systolic_blood_pressure_measurement"
 
     configuration_defaults = {
         'measurement': {
@@ -93,7 +93,7 @@ class MeasuredSBP:
 
         true_exp = self.true_exposure(idx_measure)
         detect_zero = true_exp[true_exp==0]
-        hypertension_measurement = self.true_exposure(idx_measure) + noise
+        hypertension_measurement = true_exp + noise
         hypertension_measurement.loc[detect_zero.index] = 0.0
 
         if measure_type_average:
