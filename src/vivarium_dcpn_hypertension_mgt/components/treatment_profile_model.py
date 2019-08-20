@@ -95,8 +95,7 @@ class FilterTransition(Transition):
         return super().name + "_" + self.domain_filter
 
     def setup(self, builder):
-        self.population_view = builder.population.get_view(['age', 'sex'])
-        self.blood_pressure = builder.value.get_value('high_systolic_blood_pressure.exposure')
+        self.population_view = builder.population.get_view(['age', 'sex', 'high_systolic_blood_pressure_measurement'])
         self.cvd_risk_cat = builder.value.get_value('cvd_risk_category')
 
     def probability(self, index: pd.Index):
@@ -105,7 +104,8 @@ class FilterTransition(Transition):
         p = pd.Series(0, index=index)
 
         characteristics = self.population_view.get(index)
-        characteristics['systolic_blood_pressure'] = self.blood_pressure(index)
+        characteristics = characteristics.rename(columns={'high_systolic_blood_pressure_measurement':
+                                                              'systolic_blood_pressure'})
         characteristics['cvd_risk_cat'] = self.cvd_risk_cat(index)
 
         in_domain_index = characteristics.query(self.domain_filter).index
@@ -228,12 +228,13 @@ class TreatmentProfileModel(Machine):
         self.proportion_above_hypertensive_threshold = builder.lookup.build_table(
             builder.data.load('risk_factor.high_systolic_blood_pressure.proportion_above_hypertensive_threshold'))
 
-        self.sbp = builder.value.get_value('high_systolic_blood_pressure.exposure')
-        self.raw_sbp = lambda index: pd.Series(self.sbp.source(index), index=index)
+        sbp = builder.value.get_value('high_systolic_blood_pressure.exposure')
+        self.raw_sbp = lambda index: pd.Series(sbp.source(index), index=index)
 
         self.randomness = builder.randomness.get_stream('initial_treatment_profile')
 
-        self.population_view = builder.population.get_view(['age', 'sex', self.state_column])
+        self.population_view = builder.population.get_view(['age', 'sex', 'high_systolic_blood_pressure_measurement',
+                                                            self.state_column])
         builder.population.initializes_simulants(self.on_initialize_simulants, creates_columns=[self.state_column])
         builder.value.register_value_producer('prescribed_medications', source=self.get_prescribed_medications)
         
@@ -272,8 +273,10 @@ class TreatmentProfileModel(Machine):
         return " or ".join(set(valid_transitions))
 
     def filter_for_next_valid_state(self, index):
-        characteristics = self.population_view.subview(['age', 'sex']).get(index)
-        characteristics['systolic_blood_pressure'] = self.sbp(index)
+        characteristics = self.population_view.subview(['age', 'sex',
+                                                        'high_systolic_blood_pressure_measurement']).get(index)
+        characteristics = characteristics.rename(columns={'high_systolic_blood_pressure_measurement':
+                                                              'systolic_blood_pressure'})
         characteristics['cvd_risk_cat'] = self.cvd_risk_cat(index)
         return characteristics.query(self.valid_transition_filter).index
 
