@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 
 from vivarium.framework.engine import Builder
-from vivarium.framework.engine import Event
 from vivarium_dcpn_hypertension_mgt.components import Adherence, MeasuredSBP, TreatmentProfileModel
 
 
@@ -48,27 +47,25 @@ class Adherence:
 
 
 class MeasuredSBP:
-    @property
-    def name(self):
-        return "high_systolic_blood_pressure_measurement"
-
     configuration_defaults = {
-        'measurement': {
+        'high_systolic_blood_pressure_measurement': {
             'error_sd': 6,
         }
     }
 
     def __init__(self):
-        self.configuration_defaults = {
-            f'{self.name}_measurement': MeasuredSBP.configuration_defaults['measurement']
-        }
+        self.risk = 'high_systolic_blood_pressure'
+
+    @property
+    def name(self):
+        return f"{self.risk}_measurement"
 
     def setup(self, builder: Builder):
-        self.measurement_error = builder.configuration[f'{self.name}_measurement'].error_sd
-        self.randomness = builder.randomness.get_stream(f'{self.name}.measurement')
-        self.true_exposure = builder.value.get_value(f'{self.name}.exposure')
+        self.measurement_error = builder.configuration[self.name].error_sd
+        self.randomness = builder.randomness.get_stream(f'{self.risk}.measurement')
+        self.true_exposure = builder.value.get_value(f'{self.risk}.exposure')
 
-        self.measurement_column = f'{self.name}_measurement'
+        self.measurement_column = self.name
         columns_created = [self.measurement_column]
 
         builder.population.initializes_simulants(self.on_initialize_simulants,
@@ -76,15 +73,10 @@ class MeasuredSBP:
 
         self.population_view = builder.population.get_view(columns_created)
 
-        builder.event.register_listener('time_step__prepare', self.on_time_step_prepare)
-
     def on_initialize_simulants(self, pop_data):
         self.population_view.update(
             pd.Series(np.nan, name=self.measurement_column, index=pop_data.index)
         )
-
-    def on_time_step_prepare(self, event: Event):
-        self.population_view.update(pd.Series(np.nan, index=event.index, name=self.measurement_column))
 
     def __call__(self, idx_measure: pd.Index, idx_record_these: pd.Index, measure_type_average: bool = False):
         draw = self.randomness.get_draw(idx_measure)
