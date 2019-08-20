@@ -4,7 +4,7 @@ import pandas as pd
 
 from typing import List, Union
 
-from vivarium_dcpn_hypertension_mgt.components import Adherence, MeasuredSBP
+from vivarium_dcpn_hypertension_mgt.components import Adherence, MeasuredSBP, TreatmentProfileModel
 
 
 class HealthcareUtilization:
@@ -49,8 +49,8 @@ class TreatmentAlgorithm:
 
     def setup(self, builder):
         self.measure_sbp = MeasuredSBP()
+        self.treatment_profile_model = TreatmentProfileModel()
         builder.components.add_components([Adherence(), HealthcareUtilization(), self.measure_sbp])
-        self.treatment_profile_model = builder.components.get_component('machine.treatment_profile')
 
         self.clock = builder.time.clock()
 
@@ -120,17 +120,13 @@ class TreatmentAlgorithm:
         self.population_view.update(followups)
         self._prescription_filled.loc[index] = 0
 
-    def schedule_followup(self, index: pd.Index, followup_type: str, duration: Union[pd.Timedelta, List[pd.Timedelta]],
+    def schedule_followup(self, index: pd.Index, followup_type: str, duration: pd.Timedelta,
                           current_date: pd.Timestamp):
-        if isinstance(duration, list):
-            # choose one of durations in list for each person in index
-            pass
-        else:
-            followups = self.population_view.subview(['followup_date', 'followup_duration', 'followup_type']).get(index)
-            followups['followup_type'] = followup_type
-            followups['followup_duration'] = duration
-            followups['followup_date'] = current_date + duration
-            self.population_view.update(followups)
+        followups = self.population_view.subview(['followup_date', 'followup_duration', 'followup_type']).get(index)
+        followups['followup_type'] = followup_type
+        followups['followup_duration'] = duration
+        followups['followup_date'] = current_date + duration
+        self.population_view.update(followups)
 
     def attend_followup(self, index):
         pass
@@ -158,18 +154,21 @@ class TreatmentAlgorithm:
         if self.guideline in ['aha', 'who']:
             immediate_treatment_threshold = 160
             immediately_treat = sbp.loc[sbp >= immediate_treatment_threshold].index
-            self.transition_treatment(immediately_treat)
-            self.schedule_followup(immediately_treat, 'maintenance', pd.Timedelta(days=28), visit_date)
+            treated = self.transition_treatment(immediately_treat)
+            self.schedule_followup(treated, 'maintenance', pd.Timedelta(days=28), visit_date)
+            sbp = sbp.loc[sbp < immediate_treatment_threshold]
+
+
+
+
 
 
 
     def transition_treatment(self, index):
         """Transition treatment for everyone who has a next available tx."""
-        pass
-
-
-
-
+        to_transition = self.treatment_profile_model.filter_for_next_valid_state(index)
+        self.treatment_profile_model.transition(to_transition)
+        return to_transition
 
     def get_prescriptions_filled(self, index):
         return self._prescription_filled[index]
