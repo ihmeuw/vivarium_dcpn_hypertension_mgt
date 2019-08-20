@@ -289,6 +289,10 @@ class TreatmentProfileModel(Machine):
 
         return df
 
+    def _get_state_pops(self, index):
+        population = self.population_view.subview([self.state_column]).get(index)
+        return [[state, population[population[self.state_column] == state.state_id]] for state in self.states]
+
     def validate(self):
         for state in self.states:
             assert state.is_valid(), f'State {state.state_id} is invalid.'
