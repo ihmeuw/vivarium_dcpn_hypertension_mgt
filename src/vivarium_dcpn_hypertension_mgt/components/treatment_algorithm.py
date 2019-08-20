@@ -2,8 +2,10 @@ import scipy
 import numpy as np
 import pandas as pd
 
+from typing import Union
+
 from vivarium.framework.engine import Builder
-from vivarium_dcpn_hypertension_mgt.components import Adherence, MeasuredSBP, TreatmentProfileModel
+from vivarium_dcpn_hypertension_mgt.components import TreatmentProfileModel, TreatmentEffect
 
 
 class Adherence:
@@ -131,6 +133,7 @@ class HealthcareUtilization:
 
 
 class TreatmentAlgorithm:
+
     configuration_defaults = {
         'high_systolic_blood_pressure_measurement': {
             'probability': 1.0,
@@ -143,8 +146,9 @@ class TreatmentAlgorithm:
 
     def setup(self, builder):
         self.measure_sbp = MeasuredSBP()
-        self.treatment_profile_model = TreatmentProfileModel()
-        builder.components.add_components([Adherence(), HealthcareUtilization(), self.measure_sbp])
+        builder.components.add_components([Adherence(), HealthcareUtilization(),
+                                           self.measure_sbp])
+        self.treatment_profile_model = builder.components.get_component('machine.treatment_profile')
 
         self.clock = builder.time.clock()
 
@@ -158,7 +162,9 @@ class TreatmentAlgorithm:
 
         self.randomness = {'initial_followup_scheduling': builder.randomness.get_stream('initial_followup_scheduling'),
                            'background_visit_attendance': builder.randomness.get_stream('background_visit_attendance'),
-                           'sbp_measured': builder.randomness.get_stream('sbp_measured')}
+                           'sbp_measured': builder.randomness.get_stream('sbp_measured'),
+                           'confirmatory_followup_duration':
+                               builder.randomness.get_stream('confirmatory_followup_duration')}
 
         self.sbp_measurement_probability = builder.configuration.high_systolic_blood_pressure_measurement.probability
         self.guideline = builder.configuration.hypertension_drugs.guideline
@@ -180,11 +186,11 @@ class TreatmentAlgorithm:
                                    'ICU': 0},
                                   index=pop_data.index)
 
-        initialize.loc[sims_on_tx, ['followup_duration', 'followup_type']] = pd.Timedelta(days=6*28), 'maintenance'
+        initialize.loc[sims_on_tx, ['followup_duration', 'followup_type']] = pd.Timedelta(days=180), 'maintenance'
 
         to_sim_date = np.vectorize(lambda d: self.sim_start + pd.Timedelta(days=d))
         np.random.seed(self.randomness['initial_followup_scheduling'].get_seed())
-        initialize.loc[sims_on_tx, 'followup_date'] = to_sim_date(np.random.random_integers(low=0, high=6*28,
+        initialize.loc[sims_on_tx, 'followup_date'] = to_sim_date(np.random.random_integers(low=0, high=180,
                                                                                             size=len(sims_on_tx)))
         self._prescription_filled = self._prescription_filled.append(pd.Series(0, pop_data.index))
         self._prescription_filled.loc[sims_on_tx] = 1
@@ -214,8 +220,8 @@ class TreatmentAlgorithm:
         self.population_view.update(followups)
         self._prescription_filled.loc[index] = 0
 
-    def schedule_followup(self, index: pd.Index, followup_type: str, duration: pd.Timedelta,
-                          current_date: pd.Timestamp):
+    def schedule_followup(self, index: pd.Index, followup_type: str,
+                          duration: Union[pd.Timedelta, pd.Series], current_date: pd.Timestamp):
         followups = self.population_view.subview(['followup_date', 'followup_duration', 'followup_type']).get(index)
         followups['followup_type'] = followup_type
         followups['followup_duration'] = duration
@@ -252,11 +258,28 @@ class TreatmentAlgorithm:
             self.schedule_followup(treated, 'maintenance', pd.Timedelta(days=28), visit_date)
             sbp = sbp.loc[sbp < immediate_treatment_threshold]
 
+        # schedule a confirmatory followup for everyone above controlled threshold for guideline
+        uncontrolled = self.get_uncontrolled_population(sbp.index)
+        if not uncontrolled.empty:
+            durations = [pd.Timedelta(days=x*7) for x in (2, 3, 4)]  # schedule followup in 2, 3, or 4 weeks
+            probs = [1 / len(durations)] * len(durations)
+            followup_durations = self.randomness['confirmatory_followup_duration'].choice(uncontrolled, durations, probs)
+            self.schedule_followup(uncontrolled, 'confirmatory', followup_durations, visit_date)
 
+    def get_uncontrolled_population(self, index):
+        pop = self.population_view.subview(['age', 'high_systolic_blood_pressure_measurement']).get(index)
+        if self.guideline == 'aha':
+            uncontrolled = pop[pop.high_systolic_blood_pressure_measurement >= 130].index
+        elif self.guideline == 'who':
+            uncontrolled = pop[pop.high_systolic_blood_pressure_measurement >= 140].index
+        elif self.guideline == 'china':
+            uncontrolled = pop[((pop.high_systolic_blood_pressure_measurement >= 140) & (pop.age < 80))
+                               | ((pop.high_systolic_blood_pressure_measurement >= 150) & (pop.age >= 80))].index
+        else:  # baseline
+            # TODO: verify with MW that 140 is the appropriate threshold for baseline
+            uncontrolled = pop[pop.high_systolic_blood_pressure_measurement >= 140].index
 
-
-
-
+        return uncontrolled
 
     def transition_treatment(self, index):
         """Transition treatment for everyone who has a next available tx."""
