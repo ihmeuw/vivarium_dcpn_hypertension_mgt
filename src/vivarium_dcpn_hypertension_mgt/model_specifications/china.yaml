@@ -43,6 +43,7 @@ components:
 
     vivarium_dcpn_hypertension_mgt.components:
             - CVDRiskAttribute()
+            - TreatmentProfileModel()
             - TreatmentAlgorithm()
             - TreatmentEffect()
 
@@ -70,7 +71,7 @@ configuration:
         step_size: 7 # Days
     population:
         population_size: 10_000
-        age_start: 20
+        age_start: 25
         age_end: 100
         exit_age: 100
 
@@ -85,7 +86,7 @@ configuration:
             by_year: False
 
     hypertension_drugs:
-        ace_inhibitors_or_angiotensin_ii_blockers: 'angiotensin_ii_blockers'  # one of ['ace_inhibitors', 'angiotensin_ii_blockers']
+        ace_inhibitors_or_angiotensin_ii_blockers: 'angiotensin_ii_blockers' # one of: ['ace_inhibitors', 'angiotensin_ii_blockers']
         other_drugs_efficacy:
             mono: 6
             dual: 6
@@ -96,4 +97,3 @@ configuration:
     high_systolic_blood_pressure_measurement:
         probability: 0.95
         error_sd: 6
-
