@@ -1,3 +1,5 @@
+from collections import namedtuple
+
 import scipy
 import numpy as np
 import pandas as pd
@@ -5,7 +7,7 @@ import pandas as pd
 from typing import Union
 
 from vivarium.framework.engine import Builder
-from vivarium_dcpn_hypertension_mgt.components import TreatmentProfileModel, TreatmentEffect
+from vivarium_dcpn_hypertension_mgt.components.utilities import filter_dict_for_guideline, get_durations_in_range
 
 
 class Adherence:
@@ -132,6 +134,13 @@ class HealthcareUtilization:
         return utilization
 
 
+# duration type is one of 'constant', 'options', or 'range' and duration values
+# is respectively a single value, a list of values or a tuple with two values:
+# start of range and end of range both inclusive. All values in days.
+FollowupDuration = namedtuple('FollowupDuration', 'duration_type duration_values')
+ConditionalFollowup = namedtuple('ConditionalFollowup', 'age measured_sbp followup_duration')
+
+
 class TreatmentAlgorithm:
 
     configuration_defaults = {
@@ -141,26 +150,76 @@ class TreatmentAlgorithm:
     }
 
     guideline_thresholds = {
-        'baseline': {
-            'icu': 180,
-            'immediate_tx': None,
-            'controlled': 140,  # TODO: verify with MW that 140 is the appropriate threshold for baseline
+        'icu': 180,
+        'guideline': {
+            'baseline': {
+                'immediate_tx': None,
+                'controlled': 140,  # TODO: verify with MW that 140 is the appropriate threshold for baseline
+            },
+            'aha': {
+                'immediate_tx': 160,
+                'controlled': 130,
+            },
+            'china': {
+                'immediate_tx': None,
+                'controlled': [(pd.Interval(0, 80, closed='left'), 140),  # (age interval applies to, threshold)
+                               (pd.Interval(80, 125, closed='left'), 150)],
+            },
+            'who': {
+                'immediate_tx': 160,
+                'controlled': 140,
+            }
+        }
+    }
+
+    followup_schedules = {  # top-level keys are visit type during which followup (of type in sub-keys) is being scheduled
+        'background': {
+            'maintenance': ('constant', 28),
+            'confirmatory': ('options', [2*7, 3*7, 4*7])  # 2, 3, or 4 weeks
         },
-        'aha': {
-            'icu': 180,
-            'immediate_tx': 160,
-            'controlled': 130,
+        'maintenance': {
+            'maintenance': ('constant', 28),
+            'reassessment': ('range', (3*28, 6*28))  # 3-6 months
         },
-        'china': {
-            'icu': 180,
-            'immediate_tx': None,
-            'controlled': [(pd.Interval(0, 80, closed='left'), 140),  # (age interval threshold applies to, threshold)
-                           (pd.Interval(80, 125, closed='left'), 150)],
+        'confirmatory': {
+            'maintenance': ('constant', 28),
+            'reassessment': {
+                'guideline': {
+                    'baseline': None,
+                    'who': None,
+                    'aha': [(ConditionalFollowup(age=pd.Interval(0, 125, closed='left'),
+                                                 measured_sbp=pd.Interval(130, 180, closed='left'),
+                                                 followup_duration=FollowupDuration('range', (3*28, 6*28))),  # 3-6 mos
+                             )],
+                    'china': [ConditionalFollowup(age=pd.Interval(0, 80, closed='left'),
+                                                  measured_sbp=pd.Interval(140, 180, closed='left'),
+                                                  followup_duration=FollowupDuration('range', (1*28, 3*28))),  # 1-3 mos
+                              ConditionalFollowup(age=pd.Interval(80, 125, closed='left'),
+                                                  measured_sbp=pd.Interval(60, 180, closed='left'),
+                                                  followup_duration=FollowupDuration('constant', 3*28))],  # 3 mos
+                }
+            }
         },
-        'who': {
-            'icu': 180,
-            'immediate_tx': 160,
-            'controlled': 140,
+        'reassessment': {
+            'maintenance': ('constant', 28),
+            'reassessment': {
+                'guideline': {
+                    'baseline': None,
+                    'who': None,
+                    'aha': [ConditionalFollowup(age=pd.Interval(0, 125, closed='left'),
+                                                measured_sbp=pd.Interval(120, 180, closed='left'),
+                                                followup_duration=FollowupDuration('range', (3*28, 6*28))),  # 3-6 mos
+                            ConditionalFollowup(age=pd.Interval(0, 125, closed='left'),
+                                                measured_sbp=pd.Interval(60, 120, closed='left'),
+                                                followup_duration=FollowupDuration('constant', 365.25))],  # 1 yr
+                    'china': [ConditionalFollowup(age=pd.Interval(0, 125, closed='left'),
+                                                  measured_sbp=pd.Interval(130, 180, closed='left'),
+                                                  followup_duration=FollowupDuration('range', (1*28, 3*28))),  # 1-3 mos
+                              ConditionalFollowup(age=pd.Interval(0, 125, closed='left'),
+                                                  measured_sbp=pd.Interval(60, 130, closed='left'),
+                                                  followup_duration=FollowupDuration('constant', 365.25))],  # 1 yr
+                }
+            }
         }
     }
 
@@ -169,7 +228,9 @@ class TreatmentAlgorithm:
         return 'hypertension_treatment_algorithm'
 
     def setup(self, builder):
-        self.guideline_thresholds = self.guideline_thresholds[builder.configuration.hypertension_drugs.guideline]
+        guideline = builder.configuration.hypertension_drugs.guideline
+        self.guideline_thresholds = filter_dict_for_guideline(self.guideline_thresholds, guideline)
+        self.followup_schedules = filter_dict_for_guideline(self.followup_schedules, guideline)
 
         self.measure_sbp = MeasuredSBP()
         builder.components.add_components([Adherence(), HealthcareUtilization(),
@@ -214,10 +275,11 @@ class TreatmentAlgorithm:
 
         initialize.loc[sims_on_tx, ['followup_duration', 'followup_type']] = pd.Timedelta(days=180), 'maintenance'
 
-        to_sim_date = np.vectorize(lambda d: self.sim_start + pd.Timedelta(days=d))
-        np.random.seed(self.randomness['initial_followup_scheduling'].get_seed())
-        initialize.loc[sims_on_tx, 'followup_date'] = to_sim_date(np.random.random_integers(low=0, high=180,
-                                                                                            size=len(sims_on_tx)))
+        durations =  get_durations_in_range(self.sim_start, self.randomness['initial_followup_scheduling'],
+                                            low=0, high=180,
+                                            index=sims_on_tx)
+        initialize.loc[sims_on_tx, 'followup_date'] = durations + self.sim_start
+
         self._prescription_filled = self._prescription_filled.append(pd.Series(False, pop_data.index))
         self._prescription_filled.loc[sims_on_tx] = True
 
@@ -247,17 +309,30 @@ class TreatmentAlgorithm:
         self._prescription_filled.loc[index] = False
 
     def schedule_followup(self, index: pd.Index, followup_type: str,
-                          duration: Union[pd.Timedelta, pd.Series], current_date: pd.Timestamp):
+                          followup_duration: FollowupDuration, current_date: pd.Timestamp):
+        if followup_duration.duration_type == 'constant':
+            durations = pd.Timedelta(days=followup_duration.duration_values)
+        elif followup_duration.duration_type == 'range':
+            durations = get_durations_in_range(self.randomness[f'{followup_type}_followup_duration'],
+                                               low=followup_duration.duration_values[0],
+                                               high=followup_duration.duration_values[1],
+                                               index=index)
+        else:  # options
+            options = [pd.Timedelta(days=x) for x in followup_duration.duration_values]
+            durations = self.randomness[f'{followup_type}_followup_duration'].choice(index, options)
+
         followups = self.population_view.subview(['followup_date', 'followup_duration', 'followup_type']).get(index)
         followups['followup_type'] = followup_type
-        followups['followup_duration'] = duration
-        followups['followup_date'] = current_date + duration
+        followups['followup_duration'] = followup_duration
+        followups['followup_date'] = current_date + durations
         self.population_view.update(followups)
 
     def attend_followup(self, index):
         pass
 
     def attend_background(self, index, visit_date):
+        followups = self.followup_schedules['background']
+
         # check who we measure SBP for - send everyone else home w/o doing anything else
         sbp_measured_idx = self.randomness['sbp_measured'].filter_for_probability(index,
                                                                                   self.sbp_measurement_probability)
@@ -282,16 +357,14 @@ class TreatmentAlgorithm:
         if immediate_treatment_threshold:
             immediately_treat = sbp.loc[sbp >= immediate_treatment_threshold].index
             treated = self.transition_treatment(immediately_treat)
-            self.schedule_followup(treated, 'maintenance', pd.Timedelta(days=28), visit_date)
+            self.schedule_followup(treated, 'maintenance', followups['maintenance'], visit_date)
             self.fill_prescriptions(treated)
             sbp = sbp.loc[sbp < immediate_treatment_threshold]
 
         # schedule a confirmatory followup for everyone above controlled threshold for guideline
         uncontrolled = self.get_uncontrolled_population(sbp.index)
         if not uncontrolled.empty:
-            durations = [pd.Timedelta(days=x*7) for x in (2, 3, 4)]  # schedule followup in 2, 3, or 4 weeks
-            followup_durations = self.randomness['confirmatory_followup_duration'].choice(uncontrolled, durations)
-            self.schedule_followup(uncontrolled, 'confirmatory', followup_durations, visit_date)
+            self.schedule_followup(uncontrolled, 'confirmatory', followups['confirmatory'], visit_date)
 
     def get_uncontrolled_population(self, index):
         pop = self.population_view.subview(['age', 'high_systolic_blood_pressure_measurement']).get(index)
@@ -300,9 +373,9 @@ class TreatmentAlgorithm:
             uncontrolled = pop[pop.high_systolic_blood_pressure_measurement >= threshold].index
         else:  # list of (age interval threshold applies to, threshold)
             above_threshold = pd.Series(True, index=index)
-            for t in threshold:
-                above_threshold |= (pop.age.apply(lambda a: a in t[0])
-                                    & pop.high_systolic_blood_pressure_measurement >= t[1])
+            for ct in threshold:
+                above_threshold |= (pop.age.apply(lambda a: a in ct[0])
+                                    & pop.high_systolic_blood_pressure_measurement >= ct[1])
             uncontrolled = pop[above_threshold].index
         return uncontrolled
 
