@@ -140,11 +140,37 @@ class TreatmentAlgorithm:
         }
     }
 
+    guideline_thresholds = {
+        'baseline': {
+            'icu': 180,
+            'immediate_tx': None,
+            'controlled': 140,  # TODO: verify with MW that 140 is the appropriate threshold for baseline
+        },
+        'aha': {
+            'icu': 180,
+            'immediate_tx': 160,
+            'controlled': 130,
+        },
+        'china': {
+            'icu': 180,
+            'immediate_tx': None,
+            'controlled': [(pd.Interval(0, 80, closed='left'), 140),  # (age interval threshold applies to, threshold)
+                           (pd.Interval(80, 125, closed='left'), 150)],
+        },
+        'who': {
+            'icu': 180,
+            'immediate_tx': 160,
+            'controlled': 140,
+        }
+    }
+
     @property
     def name(self):
         return 'hypertension_treatment_algorithm'
 
     def setup(self, builder):
+        self.guideline_thresholds = self.guideline_thresholds[builder.configuration.hypertension_drugs.guideline]
+
         self.measure_sbp = MeasuredSBP()
         builder.components.add_components([Adherence(), HealthcareUtilization(),
                                            self.measure_sbp])
@@ -167,7 +193,6 @@ class TreatmentAlgorithm:
                                builder.randomness.get_stream('confirmatory_followup_duration')}
 
         self.sbp_measurement_probability = builder.configuration.high_systolic_blood_pressure_measurement.probability
-        self.guideline = builder.configuration.hypertension_drugs.guideline
 
         self.healthcare_utilization = builder.value.get_value('healthcare_utilization_rate')
         self.followup_adherence = builder.value.get_value('appt_followup.adherence')
@@ -242,8 +267,8 @@ class TreatmentAlgorithm:
 
         sbp = self.measure_sbp(sbp_measured_idx, idx_record_these=no_followup_scheduled, measure_type_average=False)
 
-        # send everyone w/ sbp >= 180 to ICU and don't treat them further
-        icu_threshold = 180
+        # send everyone w/ sbp >= icu threshold to ICU and don't treat them further
+        icu_threshold = self.guideline_thresholds['icu']
         send_to_icu = sbp.loc[sbp >= icu_threshold].index
         icu = (self.population_view.subview(['intensive_care_unit_visits_count'])
                .get(send_to_icu).loc[:, 'intensive_care_unit_visits_count'] + 1)
@@ -253,8 +278,8 @@ class TreatmentAlgorithm:
         sbp = sbp.loc[no_followup_scheduled & (sbp < icu_threshold)]
 
         # some guidelines have an immediate treatment threshold
-        if self.guideline in ['aha', 'who']:
-            immediate_treatment_threshold = 160
+        immediate_treatment_threshold = self.guideline_thresholds['immediate_tx']
+        if immediate_treatment_threshold:
             immediately_treat = sbp.loc[sbp >= immediate_treatment_threshold].index
             treated = self.transition_treatment(immediately_treat)
             self.schedule_followup(treated, 'maintenance', pd.Timedelta(days=28), visit_date)
@@ -270,17 +295,15 @@ class TreatmentAlgorithm:
 
     def get_uncontrolled_population(self, index):
         pop = self.population_view.subview(['age', 'high_systolic_blood_pressure_measurement']).get(index)
-        if self.guideline == 'aha':
-            uncontrolled = pop[pop.high_systolic_blood_pressure_measurement >= 130].index
-        elif self.guideline == 'who':
-            uncontrolled = pop[pop.high_systolic_blood_pressure_measurement >= 140].index
-        elif self.guideline == 'china':
-            uncontrolled = pop[((pop.high_systolic_blood_pressure_measurement >= 140) & (pop.age < 80))
-                               | ((pop.high_systolic_blood_pressure_measurement >= 150) & (pop.age >= 80))].index
-        else:  # baseline
-            # TODO: verify with MW that 140 is the appropriate threshold for baseline
-            uncontrolled = pop[pop.high_systolic_blood_pressure_measurement >= 140].index
-
+        threshold = self.guideline_thresholds['controlled']
+        if isinstance(threshold, (int, float)):
+            uncontrolled = pop[pop.high_systolic_blood_pressure_measurement >= threshold].index
+        else:  # list of (age interval threshold applies to, threshold)
+            above_threshold = pd.Series(True, index=index)
+            for t in threshold:
+                above_threshold |= (pop.age.apply(lambda a: a in t[0])
+                                    & pop.high_systolic_blood_pressure_measurement >= t[1])
+            uncontrolled = pop[above_threshold].index
         return uncontrolled
 
     def transition_treatment(self, index):
