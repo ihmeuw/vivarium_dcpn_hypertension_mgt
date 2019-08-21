@@ -153,7 +153,7 @@ class TreatmentAlgorithm:
         self.clock = builder.time.clock()
 
         self.sim_start = pd.Timestamp(**builder.configuration.time.start)
-        columns_created = ['followup_date', 'followup_duration', 'followup_type', 'ICU']
+        columns_created = ['followup_date', 'followup_duration', 'followup_type', 'intensive_care_unit_visits_count']
         columns_required = ['treatment_profile']
         builder.population.initializes_simulants(self.on_initialize_simulants,
                                                  requires_columns=columns_required,
