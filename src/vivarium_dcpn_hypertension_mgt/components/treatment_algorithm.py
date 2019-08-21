@@ -172,6 +172,7 @@ class TreatmentAlgorithm:
         self.healthcare_utilization = builder.value.get_value('healthcare_utilization_rate')
         self.followup_adherence = builder.value.get_value('appt_followup.adherence')
 
+        self.prescription_adherence = builder.value.get_value('rx_fill.adherence')
         self._prescription_filled = pd.Series()
         self.prescription_filled = builder.value.register_value_producer('rx_fill.currently_filled',
                                                                          source=self.get_prescriptions_filled)
@@ -183,7 +184,7 @@ class TreatmentAlgorithm:
                       .query("treatment_profile != 'no_treatment_1'")).index
 
         initialize = pd.DataFrame({'followup_date': pd.NaT, 'followup_duration': pd.NaT, 'followup_type': None,
-                                   'ICU': 0},
+                                   'intensive_care_unit_visits_count': 0},
                                   index=pop_data.index)
 
         initialize.loc[sims_on_tx, ['followup_duration', 'followup_type']] = pd.Timedelta(days=180), 'maintenance'
@@ -192,8 +193,8 @@ class TreatmentAlgorithm:
         np.random.seed(self.randomness['initial_followup_scheduling'].get_seed())
         initialize.loc[sims_on_tx, 'followup_date'] = to_sim_date(np.random.random_integers(low=0, high=180,
                                                                                             size=len(sims_on_tx)))
-        self._prescription_filled = self._prescription_filled.append(pd.Series(0, pop_data.index))
-        self._prescription_filled.loc[sims_on_tx] = 1
+        self._prescription_filled = self._prescription_filled.append(pd.Series(False, pop_data.index))
+        self._prescription_filled.loc[sims_on_tx] = True
 
         self.population_view.update(initialize)
 
@@ -218,7 +219,7 @@ class TreatmentAlgorithm:
         followups = self.population_view.subview(['followup_date', 'followup_duration']).get(index)
         followups.followup_date = followups.followup_date + followups.followup_duration
         self.population_view.update(followups)
-        self._prescription_filled.loc[index] = 0
+        self._prescription_filled.loc[index] = False
 
     def schedule_followup(self, index: pd.Index, followup_type: str,
                           duration: Union[pd.Timedelta, pd.Series], current_date: pd.Timestamp):
@@ -244,7 +245,8 @@ class TreatmentAlgorithm:
         # send everyone w/ sbp >= 180 to ICU and don't treat them further
         icu_threshold = 180
         send_to_icu = sbp.loc[sbp >= icu_threshold].index
-        icu = self.population_view.subview(['ICU']).get(send_to_icu)['ICU'] + 1
+        icu = (self.population_view.subview(['intensive_care_unit_visits_count'])
+               .get(send_to_icu).loc[:, 'intensive_care_unit_visits_count'] + 1)
         self.population_view.update(icu)
         # anyone who has a hypertension followup scheduled or was sent to the ICU
         # should not continue treatment on a background visit
@@ -256,14 +258,14 @@ class TreatmentAlgorithm:
             immediately_treat = sbp.loc[sbp >= immediate_treatment_threshold].index
             treated = self.transition_treatment(immediately_treat)
             self.schedule_followup(treated, 'maintenance', pd.Timedelta(days=28), visit_date)
+            self.fill_prescriptions(treated)
             sbp = sbp.loc[sbp < immediate_treatment_threshold]
 
         # schedule a confirmatory followup for everyone above controlled threshold for guideline
         uncontrolled = self.get_uncontrolled_population(sbp.index)
         if not uncontrolled.empty:
             durations = [pd.Timedelta(days=x*7) for x in (2, 3, 4)]  # schedule followup in 2, 3, or 4 weeks
-            probs = [1 / len(durations)] * len(durations)
-            followup_durations = self.randomness['confirmatory_followup_duration'].choice(uncontrolled, durations, probs)
+            followup_durations = self.randomness['confirmatory_followup_duration'].choice(uncontrolled, durations)
             self.schedule_followup(uncontrolled, 'confirmatory', followup_durations, visit_date)
 
     def get_uncontrolled_population(self, index):
@@ -286,6 +288,10 @@ class TreatmentAlgorithm:
         to_transition = self.treatment_profile_model.filter_for_next_valid_state(index)
         self.treatment_profile_model.transition(to_transition)
         return to_transition
+
+    def fill_prescriptions(self, index):
+        # prescription_adherence is a boolean pipeline with T for sims who filled prescription, F for sims who didn't
+        self._prescription_filled.loc[index] = self.prescription_adherence(index)
 
     def get_prescriptions_filled(self, index):
         return self._prescription_filled[index]
