@@ -275,7 +275,7 @@ class TreatmentAlgorithm:
 
         initialize.loc[sims_on_tx, ['followup_duration', 'followup_type']] = pd.Timedelta(days=180), 'maintenance'
 
-        durations =  get_durations_in_range(self.sim_start, self.randomness['initial_followup_scheduling'],
+        durations =  get_durations_in_range(self.randomness['initial_followup_scheduling'],
                                             low=0, high=180,
                                             index=sims_on_tx)
         initialize.loc[sims_on_tx, 'followup_date'] = durations + self.sim_start
