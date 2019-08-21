@@ -2,9 +2,10 @@ import scipy
 import numpy as np
 import pandas as pd
 
+from typing import Union
+
 from vivarium.framework.engine import Builder
-from vivarium.framework.engine import Event
-from vivarium_dcpn_hypertension_mgt.components import Adherence
+from vivarium_dcpn_hypertension_mgt.components import TreatmentProfileModel, TreatmentEffect
 
 
 class Adherence:
@@ -48,27 +49,25 @@ class Adherence:
 
 
 class MeasuredSBP:
-    @property
-    def name(self):
-        return "high_systolic_blood_pressure_measurement"
-
     configuration_defaults = {
-        'measurement': {
+        'high_systolic_blood_pressure_measurement': {
             'error_sd': 6,
         }
     }
 
     def __init__(self):
-        self.configuration_defaults = {
-            f'{self.name}_measurement': MeasuredSBP.configuration_defaults['measurement']
-        }
+        self.risk = 'high_systolic_blood_pressure'
+
+    @property
+    def name(self):
+        return f"{self.risk}_measurement"
 
     def setup(self, builder: Builder):
-        self.measurement_error = builder.configuration[f'{self.name}_measurement'].error_sd
-        self.randomness = builder.randomness.get_stream(f'{self.name}.measurement')
-        self.true_exposure = builder.value.get_value(f'{self.name}.exposure')
+        self.measurement_error = builder.configuration[self.name].error_sd
+        self.randomness = builder.randomness.get_stream(f'{self.risk}.measurement')
+        self.true_exposure = builder.value.get_value(f'{self.risk}.exposure')
 
-        self.measurement_column = f'{self.name}_measurement'
+        self.measurement_column = self.name
         columns_created = [self.measurement_column]
 
         builder.population.initializes_simulants(self.on_initialize_simulants,
@@ -76,15 +75,10 @@ class MeasuredSBP:
 
         self.population_view = builder.population.get_view(columns_created)
 
-        builder.event.register_listener('time_step__prepare', self.on_time_step_prepare)
-
     def on_initialize_simulants(self, pop_data):
         self.population_view.update(
             pd.Series(np.nan, name=self.measurement_column, index=pop_data.index)
         )
-
-    def on_time_step_prepare(self, event: Event):
-        self.population_view.update(pd.Series(np.nan, index=event.index, name=self.measurement_column))
 
     def __call__(self, idx_measure: pd.Index, idx_record_these: pd.Index, measure_type_average: bool = False):
         draw = self.randomness.get_draw(idx_measure)
@@ -140,17 +134,26 @@ class HealthcareUtilization:
 
 class TreatmentAlgorithm:
 
+    configuration_defaults = {
+        'high_systolic_blood_pressure_measurement': {
+            'probability': 1.0,
+        }
+    }
+
     @property
     def name(self):
         return 'hypertension_treatment_algorithm'
 
     def setup(self, builder):
-        builder.components.add_components([Adherence(), HealthcareUtilization()])
+        self.measure_sbp = MeasuredSBP()
+        builder.components.add_components([Adherence(), HealthcareUtilization(),
+                                           self.measure_sbp])
+        self.treatment_profile_model = builder.components.get_component('machine.treatment_profile')
 
         self.clock = builder.time.clock()
 
         self.sim_start = pd.Timestamp(**builder.configuration.time.start)
-        columns_created = ['followup_date', 'followup_duration', 'followup_type']
+        columns_created = ['followup_date', 'followup_duration', 'followup_type', 'intensive_care_unit_visits_count']
         columns_required = ['treatment_profile']
         builder.population.initializes_simulants(self.on_initialize_simulants,
                                                  requires_columns=columns_required,
@@ -158,11 +161,18 @@ class TreatmentAlgorithm:
         self.population_view = builder.population.get_view(columns_required + columns_created)
 
         self.randomness = {'initial_followup_scheduling': builder.randomness.get_stream('initial_followup_scheduling'),
-                           'background_visit_attendance': builder.randomness.get_stream('background_visit_attendance')}
+                           'background_visit_attendance': builder.randomness.get_stream('background_visit_attendance'),
+                           'sbp_measured': builder.randomness.get_stream('sbp_measured'),
+                           'confirmatory_followup_duration':
+                               builder.randomness.get_stream('confirmatory_followup_duration')}
+
+        self.sbp_measurement_probability = builder.configuration.high_systolic_blood_pressure_measurement.probability
+        self.guideline = builder.configuration.hypertension_drugs.guideline
 
         self.healthcare_utilization = builder.value.get_value('healthcare_utilization_rate')
         self.followup_adherence = builder.value.get_value('appt_followup.adherence')
 
+        self.prescription_adherence = builder.value.get_value('rx_fill.adherence')
         self._prescription_filled = pd.Series()
         self.prescription_filled = builder.value.register_value_producer('rx_fill.currently_filled',
                                                                          source=self.get_prescriptions_filled)
@@ -173,19 +183,20 @@ class TreatmentAlgorithm:
         sims_on_tx = (self.population_view.subview(['treatment_profile']).get(pop_data.index)
                       .query("treatment_profile != 'no_treatment_1'")).index
 
-        followups = pd.DataFrame({'followup_date': pd.NaT, 'followup_duration': pd.NaT, 'followup_type': None},
-                                 index=pop_data.index)
+        initialize = pd.DataFrame({'followup_date': pd.NaT, 'followup_duration': pd.NaT, 'followup_type': None,
+                                   'intensive_care_unit_visits_count': 0},
+                                  index=pop_data.index)
 
-        followups.loc[sims_on_tx, ['followup_duration', 'followup_type']] = pd.Timedelta(days=6*28), 'maintenance'
+        initialize.loc[sims_on_tx, ['followup_duration', 'followup_type']] = pd.Timedelta(days=180), 'maintenance'
 
         to_sim_date = np.vectorize(lambda d: self.sim_start + pd.Timedelta(days=d))
         np.random.seed(self.randomness['initial_followup_scheduling'].get_seed())
-        followups.loc[sims_on_tx, 'followup_date'] = to_sim_date(np.random.random_integers(low=0, high=6*28,
-                                                                                           size=len(sims_on_tx)))
-        self._prescription_filled = self._prescription_filled.append(pd.Series(0, pop_data.index))
-        self._prescription_filled.loc[sims_on_tx] = 1
+        initialize.loc[sims_on_tx, 'followup_date'] = to_sim_date(np.random.random_integers(low=0, high=180,
+                                                                                            size=len(sims_on_tx)))
+        self._prescription_filled = self._prescription_filled.append(pd.Series(False, pop_data.index))
+        self._prescription_filled.loc[sims_on_tx] = True
 
-        self.population_view.update(followups)
+        self.population_view.update(initialize)
 
     def on_time_step(self, event):
         pop = self.population_view.get(event.index)
@@ -202,19 +213,85 @@ class TreatmentAlgorithm:
                                 .filter_for_rate(background_eligible,
                                                  self.healthcare_utilization(background_eligible).values))
 
-        self.attend_background(background_attending)
+        self.attend_background(background_attending, event.time)
 
     def reschedule_followup(self, index):
-        followups = self.population_view.subview(['followup_date', 'followup_duration']).get(index).copy()
+        followups = self.population_view.subview(['followup_date', 'followup_duration']).get(index)
         followups.followup_date = followups.followup_date + followups.followup_duration
         self.population_view.update(followups)
-        self._prescription_filled.loc[index] = 0
+        self._prescription_filled.loc[index] = False
+
+    def schedule_followup(self, index: pd.Index, followup_type: str,
+                          duration: Union[pd.Timedelta, pd.Series], current_date: pd.Timestamp):
+        followups = self.population_view.subview(['followup_date', 'followup_duration', 'followup_type']).get(index)
+        followups['followup_type'] = followup_type
+        followups['followup_duration'] = duration
+        followups['followup_date'] = current_date + duration
+        self.population_view.update(followups)
 
     def attend_followup(self, index):
         pass
 
-    def attend_background(self, index):
-        pass
+    def attend_background(self, index, visit_date):
+        # check who we measure SBP for - send everyone else home w/o doing anything else
+        sbp_measured_idx = self.randomness['sbp_measured'].filter_for_probability(index,
+                                                                                  self.sbp_measurement_probability)
+        # we don't want to record any SBP measurement for people already on hypertension visit plan
+        no_followup_scheduled = sbp_measured_idx[self.population_view.subview(['followup_date'])
+            .get(sbp_measured_idx)['followup_date'].isnull()]
+
+        sbp = self.measure_sbp(sbp_measured_idx, idx_record_these=no_followup_scheduled, measure_type_average=False)
+
+        # send everyone w/ sbp >= 180 to ICU and don't treat them further
+        icu_threshold = 180
+        send_to_icu = sbp.loc[sbp >= icu_threshold].index
+        icu = (self.population_view.subview(['intensive_care_unit_visits_count'])
+               .get(send_to_icu).loc[:, 'intensive_care_unit_visits_count'] + 1)
+        self.population_view.update(icu)
+        # anyone who has a hypertension followup scheduled or was sent to the ICU
+        # should not continue treatment on a background visit
+        sbp = sbp.loc[no_followup_scheduled & (sbp < icu_threshold)]
+
+        # some guidelines have an immediate treatment threshold
+        if self.guideline in ['aha', 'who']:
+            immediate_treatment_threshold = 160
+            immediately_treat = sbp.loc[sbp >= immediate_treatment_threshold].index
+            treated = self.transition_treatment(immediately_treat)
+            self.schedule_followup(treated, 'maintenance', pd.Timedelta(days=28), visit_date)
+            self.fill_prescriptions(treated)
+            sbp = sbp.loc[sbp < immediate_treatment_threshold]
+
+        # schedule a confirmatory followup for everyone above controlled threshold for guideline
+        uncontrolled = self.get_uncontrolled_population(sbp.index)
+        if not uncontrolled.empty:
+            durations = [pd.Timedelta(days=x*7) for x in (2, 3, 4)]  # schedule followup in 2, 3, or 4 weeks
+            followup_durations = self.randomness['confirmatory_followup_duration'].choice(uncontrolled, durations)
+            self.schedule_followup(uncontrolled, 'confirmatory', followup_durations, visit_date)
+
+    def get_uncontrolled_population(self, index):
+        pop = self.population_view.subview(['age', 'high_systolic_blood_pressure_measurement']).get(index)
+        if self.guideline == 'aha':
+            uncontrolled = pop[pop.high_systolic_blood_pressure_measurement >= 130].index
+        elif self.guideline == 'who':
+            uncontrolled = pop[pop.high_systolic_blood_pressure_measurement >= 140].index
+        elif self.guideline == 'china':
+            uncontrolled = pop[((pop.high_systolic_blood_pressure_measurement >= 140) & (pop.age < 80))
+                               | ((pop.high_systolic_blood_pressure_measurement >= 150) & (pop.age >= 80))].index
+        else:  # baseline
+            # TODO: verify with MW that 140 is the appropriate threshold for baseline
+            uncontrolled = pop[pop.high_systolic_blood_pressure_measurement >= 140].index
+
+        return uncontrolled
+
+    def transition_treatment(self, index):
+        """Transition treatment for everyone who has a next available tx."""
+        to_transition = self.treatment_profile_model.filter_for_next_valid_state(index)
+        self.treatment_profile_model.transition(to_transition)
+        return to_transition
+
+    def fill_prescriptions(self, index):
+        # prescription_adherence is a boolean pipeline with T for sims who filled prescription, F for sims who didn't
+        self._prescription_filled.loc[index] = self.prescription_adherence(index)
 
     def get_prescriptions_filled(self, index):
         return self._prescription_filled[index]
