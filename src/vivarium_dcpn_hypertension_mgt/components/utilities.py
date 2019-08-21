@@ -259,3 +259,38 @@ def plot_profile_domain_filters(data, figure_name):
 
     return fig
 
+
+def filter_dict_for_guideline(d, guideline):
+    """If a dictionary has a 'guideline' key, indicating multiple options
+    based on guideline, return the dictionary with only the options for the
+    given guideline."""
+    def collapse_dict(to_collapse):
+        collapsed = dict()
+        for k, v in to_collapse.items():
+            if k == 'guideline':
+                # won't have guideline nested w/i guideline so can just
+                # collapse once when we hit guideline and not recurse
+                g = v[guideline]
+                if isinstance(g, dict):  # bring up above guideline
+                    for sub_k, sub_v in g.items():
+                        collapsed[sub_k] = sub_v
+                else:
+                    return g
+            elif isinstance(v, dict):
+                collapsed[k] = collapse_dict(v)
+            else:
+                collapsed[k] = v
+        return collapsed
+
+    return collapse_dict(d)
+
+
+def get_durations_in_range(randomness, low: int, high: int, index: pd.Index):
+    """Get pd.Timedelta durations between low and high days, both inclusive for
+    given index using giving randomness."""
+    to_time_delta = np.vectorize(lambda d: pd.Timedelta(days=d))
+    np.random.seed(randomness.get_seed())
+    return pd.Series(to_time_delta(np.random.random_integers(low=low, high=high, size=len(index))), index=index)
+
+
+
