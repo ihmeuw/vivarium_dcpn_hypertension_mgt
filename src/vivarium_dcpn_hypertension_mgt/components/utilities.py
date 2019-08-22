@@ -1,5 +1,5 @@
+from collections import namedtuple
 import itertools
-from loguru import logger
 
 import matplotlib.pyplot as plt
 from matplotlib.collections import PatchCollection
@@ -258,4 +258,131 @@ def plot_profile_domain_filters(data, figure_name):
     fig.subplots_adjust(top=0.88)
 
     return fig
+
+
+# duration type is one of 'constant', 'options', or 'range' and duration values
+# is respectively a single value, a list of values or a tuple with two values:
+# start of range and end of range both inclusive. All values in days.
+FollowupDuration = namedtuple('FollowupDuration', 'duration_type duration_values')
+ConditionalFollowup = namedtuple('ConditionalFollowup', 'age measured_sbp followup_duration')
+
+
+def get_dict_for_guideline(guideline, dictionary_choice):
+    """If a dictionary has a 'guideline' key, indicating multiple options
+    based on guideline, return the dictionary with only the options for the
+    given guideline."""
+    thresholds = {
+        'icu': 180,
+        'guideline': {
+            'baseline': {
+                'immediate_tx': None,
+                'controlled': 140,  # TODO: verify with MW that 140 is the appropriate threshold for baseline
+            },
+            'aha': {
+                'immediate_tx': 160,
+                'controlled': 130,
+            },
+            'china': {
+                'immediate_tx': None,
+                'controlled': [(pd.Interval(0, 80, closed='left'), 140),  # (age interval applies to, threshold)
+                               (pd.Interval(80, 125, closed='left'), 150)],
+            },
+            'who': {
+                'immediate_tx': 160,
+                'controlled': 140,
+            }
+        }
+    }
+
+    followup_schedules = {
+        # top-level keys are visit type during which followup (of type in sub-keys) is being scheduled
+        'background': {
+            'maintenance': FollowupDuration('constant', 28),
+            'confirmatory': FollowupDuration('options', [2 * 7, 3 * 7, 4 * 7])  # 2, 3, or 4 weeks
+        },
+        'maintenance': {
+            'maintenance': FollowupDuration('constant', 28),
+            'reassessment': FollowupDuration('range', (3 * 28, 6 * 28))  # 3-6 months
+        },
+        'confirmatory': {
+            'maintenance': FollowupDuration('constant', 28),
+            'reassessment': {
+                'guideline': {
+                    'baseline': None,
+                    'who': None,
+                    'aha': [(ConditionalFollowup(age=pd.Interval(0, 125, closed='left'),
+                                                 measured_sbp=pd.Interval(130, 180, closed='left'),
+                                                 followup_duration=FollowupDuration('range', (3 * 28, 6 * 28))),
+                             # 3-6 mos
+                             )],
+                    'china': [ConditionalFollowup(age=pd.Interval(0, 80, closed='left'),
+                                                  measured_sbp=pd.Interval(140, 180, closed='left'),
+                                                  followup_duration=FollowupDuration('range', (1 * 28, 3 * 28))),
+                              # 1-3 mos
+                              ConditionalFollowup(age=pd.Interval(80, 125, closed='left'),
+                                                  measured_sbp=pd.Interval(60, 180, closed='left'),
+                                                  followup_duration=FollowupDuration('constant', 3 * 28))],  # 3 mos
+                }
+            }
+        },
+        'reassessment': {
+            'maintenance': FollowupDuration('constant', 28),
+            'reassessment': {
+                'guideline': {
+                    'baseline': None,
+                    'who': None,
+                    'aha': [ConditionalFollowup(age=pd.Interval(0, 125, closed='left'),
+                                                measured_sbp=pd.Interval(120, 180, closed='left'),
+                                                followup_duration=FollowupDuration('range', (3 * 28, 6 * 28))),
+                            # 3-6 mos
+                            ConditionalFollowup(age=pd.Interval(0, 125, closed='left'),
+                                                measured_sbp=pd.Interval(60, 120, closed='left'),
+                                                followup_duration=FollowupDuration('constant', 365.25))],  # 1 yr
+                    'china': [ConditionalFollowup(age=pd.Interval(0, 125, closed='left'),
+                                                  measured_sbp=pd.Interval(130, 180, closed='left'),
+                                                  followup_duration=FollowupDuration('range', (1 * 28, 3 * 28))),
+                              # 1-3 mos
+                              ConditionalFollowup(age=pd.Interval(0, 125, closed='left'),
+                                                  measured_sbp=pd.Interval(60, 130, closed='left'),
+                                                  followup_duration=FollowupDuration('constant', 365.25))],  # 1 yr
+                }
+            }
+        }
+    }
+
+    def collapse_dict(to_collapse):
+        collapsed = dict()
+        for k, v in to_collapse.items():
+            if k == 'guideline':
+                # won't have guideline nested w/i guideline so can just
+                # collapse once when we hit guideline and not recurse
+                g = v[guideline]
+                if isinstance(g, dict):  # bring up above guideline
+                    for sub_k, sub_v in g.items():
+                        collapsed[sub_k] = sub_v
+                else:
+                    collapsed = g
+            elif isinstance(v, dict):
+                collapsed[k] = collapse_dict(v)
+            else:
+                collapsed[k] = v
+        return collapsed
+
+    if dictionary_choice == 'thresholds':
+        return collapse_dict(thresholds)
+    elif dictionary_choice == 'followup_schedules':
+        return collapse_dict(followup_schedules)
+    else:
+        raise ValueError(f'The only acceptable dictionary choices are "thresholds" or "followup_schedules". You'
+                         f'provided {dictionary_choice}.')
+
+
+def get_durations_in_range(randomness, low: int, high: int, index: pd.Index):
+    """Get pd.Timedelta durations between low and high days, both inclusive for
+    given index using giving randomness."""
+    to_time_delta = np.vectorize(lambda d: pd.Timedelta(days=d))
+    np.random.seed(randomness.get_seed())
+    return pd.Series(to_time_delta(np.random.random_integers(low=low, high=high, size=len(index))), index=index)
+
+
 
