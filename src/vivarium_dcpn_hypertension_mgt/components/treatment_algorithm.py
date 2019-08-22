@@ -87,9 +87,9 @@ class MeasuredSBP:
             noise = 0
 
         true_exp = self.true_exposure(idx_measure)
-        detect_zero = true_exp[true_exp == 0]
+        assert np.all(true_exp > 0), '0 values detected for high systolic blood pressure exposure. ' \
+                                     'Verify your age ranges are valid for this risk factor.'
         hypertension_measurement = true_exp + noise
-        hypertension_measurement.loc[detect_zero.index] = 0.0
 
         hypertension_measurement.loc[idx_average_these] = (hypertension_measurement.loc[idx_average_these] +
                self.population_view.get(idx_measure).loc[idx_average_these, self.measurement_column]) / 2
@@ -250,8 +250,6 @@ class TreatmentAlgorithm:
         to_average = followup_groups['confirmatory'] if 'confirmatory' in followup_groups.index else pd.Index([])
         sbp = self.measure_sbp(index, idx_record_these=index, idx_average_these=to_average)
         # send everyone w/ sbp >= icu threshold to ICU and don't treat them further
-        sent_to_icu = self.send_to_icu(sbp)
-        # anyone who was sent to the ICU should not continue treatment on this visit
         sent_to_icu = self.send_to_icu(sbp)
         sbp = sbp.loc[~sbp.index.isin(sent_to_icu)]
 
