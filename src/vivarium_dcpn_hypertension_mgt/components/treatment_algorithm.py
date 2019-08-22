@@ -174,15 +174,15 @@ class TreatmentAlgorithm:
 
     followup_schedules = {  # top-level keys are visit type during which followup (of type in sub-keys) is being scheduled
         'background': {
-            'maintenance': ('constant', 28),
-            'confirmatory': ('options', [2*7, 3*7, 4*7])  # 2, 3, or 4 weeks
+            'maintenance': FollowupDuration('constant', 28),
+            'confirmatory': FollowupDuration('options', [2*7, 3*7, 4*7])  # 2, 3, or 4 weeks
         },
         'maintenance': {
-            'maintenance': ('constant', 28),
-            'reassessment': ('range', (3*28, 6*28))  # 3-6 months
+            'maintenance': FollowupDuration('constant', 28),
+            'reassessment': FollowupDuration('range', (3*28, 6*28))  # 3-6 months
         },
         'confirmatory': {
-            'maintenance': ('constant', 28),
+            'maintenance': FollowupDuration('constant', 28),
             'reassessment': {
                 'guideline': {
                     'baseline': None,
@@ -201,7 +201,7 @@ class TreatmentAlgorithm:
             }
         },
         'reassessment': {
-            'maintenance': ('constant', 28),
+            'maintenance': FollowupDuration('constant', 28),
             'reassessment': {
                 'guideline': {
                     'baseline': None,
@@ -275,9 +275,9 @@ class TreatmentAlgorithm:
 
         initialize.loc[sims_on_tx, ['followup_duration', 'followup_type']] = pd.Timedelta(days=180), 'maintenance'
 
-        durations =  get_durations_in_range(self.randomness['initial_followup_scheduling'],
-                                            low=0, high=180,
-                                            index=sims_on_tx)
+        durations = get_durations_in_range(self.randomness['initial_followup_scheduling'],
+                                           low=0, high=180,
+                                           index=sims_on_tx)
         initialize.loc[sims_on_tx, 'followup_date'] = durations + self.sim_start
 
         self._prescription_filled = self._prescription_filled.append(pd.Series(False, pop_data.index))
@@ -323,7 +323,7 @@ class TreatmentAlgorithm:
 
         followups = self.population_view.subview(['followup_date', 'followup_duration', 'followup_type']).get(index)
         followups['followup_type'] = followup_type
-        followups['followup_duration'] = followup_duration
+        followups['followup_duration'] = durations
         followups['followup_date'] = current_date + durations
         self.population_view.update(followups)
 
