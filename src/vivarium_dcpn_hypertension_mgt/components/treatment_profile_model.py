@@ -169,7 +169,7 @@ class CVDRiskAttribute:
 
         Risk Ranges:
             bmi >= 28 kg/m2
-            fpg: 6.1 - 6.9 mmol/L
+            fpg >= 6.1 mmol/L
             time since last ihd event: <= 1 yr
         """
 
@@ -179,7 +179,7 @@ class CVDRiskAttribute:
         fpg = self.fpg(index)
         time_since_ihd = self.clock() - self.population_view.get(index).ischemic_heart_disease_event_time
 
-        cvd_risk.loc[(28 <= bmi) | ((6.1 <= fpg) & (fpg <= 6.9)) | (time_since_ihd <= pd.Timedelta(days=365.25))] = 1
+        cvd_risk.loc[(28 <= bmi) | (6.1 <= fpg) | (time_since_ihd <= pd.Timedelta(days=365.25))] = 1
 
         return cvd_risk
 
