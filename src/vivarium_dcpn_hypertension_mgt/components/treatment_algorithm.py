@@ -79,7 +79,7 @@ class MeasuredSBP:
             pd.Series(np.nan, name=self.measurement_column, index=pop_data.index)
         )
 
-    def __call__(self, idx_measure: pd.Index, idx_record_these: pd.Index, measure_type_average: bool = False):
+    def __call__(self, idx_measure: pd.Index, idx_record_these: pd.Index, idx_average_these: pd.Index):
         draw = self.randomness.get_draw(idx_measure)
         if self.measurement_error:
             noise = scipy.stats.norm.ppf(draw, scale=self.measurement_error)
@@ -87,13 +87,12 @@ class MeasuredSBP:
             noise = 0
 
         true_exp = self.true_exposure(idx_measure)
-        detect_zero = true_exp[true_exp==0]
+        assert np.all(true_exp > 0), '0 values detected for high systolic blood pressure exposure. ' \
+                                     'Verify your age ranges are valid for this risk factor.'
         hypertension_measurement = true_exp + noise
-        hypertension_measurement.loc[detect_zero.index] = 0.0
 
-        if measure_type_average:
-            hypertension_measurement = (hypertension_measurement +
-                                        self.population_view.get(idx_measure)[self.measurement_column]) / 2
+        hypertension_measurement.loc[idx_average_these] = (hypertension_measurement.loc[idx_average_these] +
+               self.population_view.get(idx_measure).loc[idx_average_these, self.measurement_column]) / 2
 
         measurement = self.population_view.get(idx_measure)[self.measurement_column]
         measurement.loc[idx_record_these] = hypertension_measurement
@@ -163,11 +162,10 @@ class TreatmentAlgorithm:
                                                  creates_columns=columns_created)
         self.population_view = builder.population.get_view(columns_required + columns_created)
 
-        self.randomness = {'initial_followup_scheduling': builder.randomness.get_stream('initial_followup_scheduling'),
+        self.randomness = {'followup_scheduling': builder.randomness.get_stream('followup_scheduling'),
                            'background_visit_attendance': builder.randomness.get_stream('background_visit_attendance'),
-                           'sbp_measured': builder.randomness.get_stream('sbp_measured'),
-                           'confirmatory_followup_duration':
-                               builder.randomness.get_stream('confirmatory_followup_duration')}
+                           'sbp_measured': builder.randomness.get_stream('sbp_measured')
+                           }
 
         self.sbp_measurement_probability = builder.configuration.high_systolic_blood_pressure_measurement.probability
 
@@ -191,7 +189,7 @@ class TreatmentAlgorithm:
 
         initialize.loc[sims_on_tx, ['followup_duration', 'followup_type']] = pd.Timedelta(days=180), 'maintenance'
 
-        durations = get_durations_in_range(self.randomness['initial_followup_scheduling'],
+        durations = get_durations_in_range(self.randomness['followup_scheduling'],
                                            low=0, high=180,
                                            index=sims_on_tx)
         initialize.loc[sims_on_tx, 'followup_date'] = durations + self.sim_start
@@ -208,7 +206,7 @@ class TreatmentAlgorithm:
 
         followup_pop = event.index[followup_scheduled]
         followup_attendance = self.followup_adherence(followup_pop)
-        self.attend_followup(followup_pop[followup_attendance])
+        self.attend_followup(followup_pop[followup_attendance], event.time)
         self.reschedule_followup(followup_pop[~followup_attendance])
 
         background_eligible = event.index[~followup_scheduled]
@@ -225,17 +223,18 @@ class TreatmentAlgorithm:
         self._prescription_filled.loc[index] = False
 
     def schedule_followup(self, index: pd.Index, followup_type: str,
-                          followup_duration: FollowupDuration, current_date: pd.Timestamp):
+                          followup_duration: FollowupDuration, current_date: pd.Timestamp, from_visit: str):
         if followup_duration.duration_type == 'constant':
             durations = pd.Timedelta(days=followup_duration.duration_values)
         elif followup_duration.duration_type == 'range':
-            durations = get_durations_in_range(self.randomness[f'{followup_type}_followup_duration'],
+            durations = get_durations_in_range(self.randomness['followup_scheduling'],
                                                low=followup_duration.duration_values[0],
                                                high=followup_duration.duration_values[1],
-                                               index=index)
+                                               index=index, randomness_key=f'{from_visit}_to_{followup_type}')
         else:  # options
             options = [pd.Timedelta(days=x) for x in followup_duration.duration_values]
-            durations = self.randomness[f'{followup_type}_followup_duration'].choice(index, options)
+            durations = self.randomness['followup_scheduling'].choice(index, options,
+                                                                      additional_key=f'{from_visit}_to_{followup_type}')
 
         followups = self.population_view.subview(['followup_date', 'followup_duration', 'followup_type']).get(index)
         followups['followup_type'] = followup_type
@@ -243,8 +242,51 @@ class TreatmentAlgorithm:
         followups['followup_date'] = current_date + durations
         self.population_view.update(followups)
 
-    def attend_followup(self, index):
-        pass
+    def attend_followup(self, index, visit_date):
+        pop = self.population_view.subview(['followup_type', 'age']).get(index)
+        followup_groups = pop.groupby(['followup_type']).apply(lambda g: g.index)
+
+        # measure sbp and use the average of this measurement + last for those here for confirmatory visit
+        to_average = followup_groups['confirmatory'] if 'confirmatory' in followup_groups.index else pd.Index([])
+        sbp = self.measure_sbp(index, idx_record_these=index, idx_average_these=to_average)
+        # send everyone w/ sbp >= icu threshold to ICU and don't treat them further
+        sent_to_icu = self.send_to_icu(sbp)
+        sbp = sbp.loc[~sbp.index.isin(sent_to_icu)]
+
+        # transition everyone who has a treatment available
+        treated = self.transition_treatment(sbp.index, visit_date)
+        self.fill_prescriptions(treated)
+
+        # set up followups
+        for visit_type, idx in followup_groups.iteritems():
+            followups = self.followup_schedules[visit_type]
+
+            # schedule maintenance for everyone who was treated
+            self.schedule_followup(treated.intersection(idx), 'maintenance', followups['maintenance'],
+                                   visit_date, from_visit=visit_type)
+
+            # schedule reassessment for everyone who was not treated
+            reassessment_schedules = followups['reassessment']
+            to_schedule = sbp.index.difference(treated).intersection(idx)
+            if isinstance(reassessment_schedules, FollowupDuration):
+                self.schedule_followup(to_schedule, 'reassessment',
+                                       followups['reassessment'], visit_date, from_visit=visit_type)
+            elif isinstance(reassessment_schedules, list):  # list of ConditionalFollowups
+                for cf in reassessment_schedules:
+                    conditional_grp = pop[pop.age.apply(lambda a: a in cf.age) &
+                            pop.high_systolic_blood_pressure_measurement.apply(lambda s: s in cf.measured_sbp)].index
+                    self.schedule_followup(conditional_grp.intersection(to_schedule), 'reassessment',
+                                           cf.followup_duration, visit_date, from_visit=visit_type)
+            else:  # guideline doesn't have mandate any reassessment visits scheduled from this visit_type
+                pass
+
+    def send_to_icu(self, sbp):
+        icu_threshold = self.guideline_thresholds['icu']
+        send_to_icu = sbp.loc[sbp >= icu_threshold].index
+        icu = (self.population_view.subview(['intensive_care_unit_visits_count'])
+               .get(send_to_icu).loc[:, 'intensive_care_unit_visits_count'] + 1)
+        self.population_view.update(icu)
+        return send_to_icu
 
     def attend_background(self, index, visit_date):
         followups = self.followup_schedules['background']
@@ -256,31 +298,29 @@ class TreatmentAlgorithm:
         no_followup_scheduled = sbp_measured_idx[self.population_view.subview(['followup_date'])
             .get(sbp_measured_idx)['followup_date'].isnull()]
 
-        sbp = self.measure_sbp(sbp_measured_idx, idx_record_these=no_followup_scheduled, measure_type_average=False)
+        sbp = self.measure_sbp(sbp_measured_idx, idx_record_these=no_followup_scheduled, idx_average_these=pd.Index([]))
 
         # send everyone w/ sbp >= icu threshold to ICU and don't treat them further
-        icu_threshold = self.guideline_thresholds['icu']
-        send_to_icu = sbp.loc[sbp >= icu_threshold].index
-        icu = (self.population_view.subview(['intensive_care_unit_visits_count'])
-               .get(send_to_icu).loc[:, 'intensive_care_unit_visits_count'] + 1)
-        self.population_view.update(icu)
+        sent_to_icu = self.send_to_icu(sbp)
         # anyone who has a hypertension followup scheduled or was sent to the ICU
         # should not continue treatment on a background visit
-        sbp = sbp.loc[no_followup_scheduled & (sbp < icu_threshold)]
+        sbp = sbp.loc[no_followup_scheduled & (~sbp.index.isin(sent_to_icu))]
 
         # some guidelines have an immediate treatment threshold
         immediate_treatment_threshold = self.guideline_thresholds['immediate_tx']
         if immediate_treatment_threshold:
             immediately_treat = sbp.loc[sbp >= immediate_treatment_threshold].index
-            treated = self.transition_treatment(immediately_treat)
-            self.schedule_followup(treated, 'maintenance', followups['maintenance'], visit_date)
+            treated = self.transition_treatment(immediately_treat, visit_date)
+            self.schedule_followup(treated, 'maintenance', followups['maintenance'], visit_date,
+                                   from_visit='background')
             self.fill_prescriptions(treated)
             sbp = sbp.loc[sbp < immediate_treatment_threshold]
 
         # schedule a confirmatory followup for everyone above controlled threshold for guideline
         uncontrolled = self.get_uncontrolled_population(sbp.index)
         if not uncontrolled.empty:
-            self.schedule_followup(uncontrolled, 'confirmatory', followups['confirmatory'], visit_date)
+            self.schedule_followup(uncontrolled, 'confirmatory', followups['confirmatory'], visit_date,
+                                   from_visit='background')
 
     def get_uncontrolled_population(self, index):
         pop = self.population_view.subview(['age', 'high_systolic_blood_pressure_measurement']).get(index)
@@ -288,17 +328,17 @@ class TreatmentAlgorithm:
         if isinstance(threshold, (int, float)):
             uncontrolled = pop[pop.high_systolic_blood_pressure_measurement >= threshold].index
         else:  # list of (age interval threshold applies to, threshold)
-            above_threshold = pd.Series(True, index=index)
+            above_threshold = pd.Series(False, index=index)
             for ct in threshold:
                 above_threshold |= (pop.age.apply(lambda a: a in ct[0])
                                     & pop.high_systolic_blood_pressure_measurement >= ct[1])
             uncontrolled = pop[above_threshold].index
         return uncontrolled
 
-    def transition_treatment(self, index):
+    def transition_treatment(self, index, event_time):
         """Transition treatment for everyone who has a next available tx."""
         to_transition = self.treatment_profile_model.filter_for_next_valid_state(index)
-        self.treatment_profile_model.transition(to_transition)
+        self.treatment_profile_model.transition(to_transition, event_time)
         return to_transition
 
     def fill_prescriptions(self, index):

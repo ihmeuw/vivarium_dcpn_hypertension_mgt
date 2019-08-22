@@ -134,8 +134,9 @@ class NullTreatmentProfile(TreatmentProfile):
         raise NotImplementedError('Transitions cannot be added to the null state.')
 
     def transition_effect(self, index, event_time, population_view):
-        raise NullStateError(f'{len(index)} simulants are attempting to transition '
-                             f'into the null treatment profile state.')
+        if not index.empty:
+            raise NullStateError(f'{len(index)} simulants are attempting to transition '
+                                 f'into the null treatment profile state.')
 
     def is_valid(self):
         """The null state is valid so long as there are no transitions from it."""
