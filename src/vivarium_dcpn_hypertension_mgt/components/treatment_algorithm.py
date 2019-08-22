@@ -206,7 +206,7 @@ class TreatmentAlgorithm:
 
         followup_pop = event.index[followup_scheduled]
         followup_attendance = self.followup_adherence(followup_pop)
-        self.attend_followup(followup_pop[followup_attendance])
+        self.attend_followup(followup_pop[followup_attendance], event.time)
         self.reschedule_followup(followup_pop[~followup_attendance])
 
         background_eligible = event.index[~followup_scheduled]
@@ -247,8 +247,8 @@ class TreatmentAlgorithm:
         followup_groups = pop.groupby(['followup_type']).apply(lambda g: g.index)
 
         # measure sbp and use the average of this measurement + last for those here for confirmatory visit
-        sbp = self.measure_sbp(index, idx_record_these=index, idx_average_these=followup_groups['confirmatory'])
-
+        to_average = followup_groups['confirmatory'] if 'confirmatory' in followup_groups.index else pd.Index([])
+        sbp = self.measure_sbp(index, idx_record_these=index, idx_average_these=to_average)
         # send everyone w/ sbp >= icu threshold to ICU and don't treat them further
         sent_to_icu = self.send_to_icu(sbp)
         # anyone who was sent to the ICU should not continue treatment on this visit
@@ -256,7 +256,7 @@ class TreatmentAlgorithm:
         sbp = sbp.loc[~sbp.index.isin(sent_to_icu)]
 
         # transition everyone who has a treatment available
-        treated = self.transition_treatment(sbp.index)
+        treated = self.transition_treatment(sbp.index, visit_date)
         self.fill_prescriptions(treated)
 
         # set up followups
@@ -269,17 +269,18 @@ class TreatmentAlgorithm:
 
             # schedule reassessment for everyone who was not treated
             reassessment_schedules = followups['reassessment']
-            to_schedule = sbp.difference(treated).intersection(idx)
+            to_schedule = sbp.index.difference(treated).intersection(idx)
             if isinstance(reassessment_schedules, FollowupDuration):
                 self.schedule_followup(to_schedule, 'reassessment',
                                        followups['reassessment'], visit_date, from_visit=visit_type)
-            else:  # list of ConditionalFollowups
+            elif isinstance(reassessment_schedules, list):  # list of ConditionalFollowups
                 for cf in reassessment_schedules:
                     conditional_grp = pop[pop.age.apply(lambda a: a in cf.age) &
                             pop.high_systolic_blood_pressure_measurement.apply(lambda s: s in cf.measured_sbp)].index
-                    self.schedule_followup(conditional_grp.intersection(to_schedule), 'reassessment')
-
-
+                    self.schedule_followup(conditional_grp.intersection(to_schedule), 'reassessment',
+                                           cf.followup_duration, visit_date, from_visit=visit_type)
+            else:  # guideline doesn't have mandate any reassessment visits scheduled from this visit_type
+                pass
 
     def send_to_icu(self, sbp):
         icu_threshold = self.guideline_thresholds['icu']
@@ -311,7 +312,7 @@ class TreatmentAlgorithm:
         immediate_treatment_threshold = self.guideline_thresholds['immediate_tx']
         if immediate_treatment_threshold:
             immediately_treat = sbp.loc[sbp >= immediate_treatment_threshold].index
-            treated = self.transition_treatment(immediately_treat)
+            treated = self.transition_treatment(immediately_treat, visit_date)
             self.schedule_followup(treated, 'maintenance', followups['maintenance'], visit_date,
                                    from_visit='background')
             self.fill_prescriptions(treated)
@@ -336,10 +337,10 @@ class TreatmentAlgorithm:
             uncontrolled = pop[above_threshold].index
         return uncontrolled
 
-    def transition_treatment(self, index):
+    def transition_treatment(self, index, event_time):
         """Transition treatment for everyone who has a next available tx."""
         to_transition = self.treatment_profile_model.filter_for_next_valid_state(index)
-        self.treatment_profile_model.transition(to_transition)
+        self.treatment_profile_model.transition(to_transition, event_time)
         return to_transition
 
     def fill_prescriptions(self, index):
