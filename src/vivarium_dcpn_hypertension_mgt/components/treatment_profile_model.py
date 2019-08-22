@@ -274,6 +274,9 @@ class TreatmentProfileModel(Machine):
         return " or ".join(set(valid_transitions))
 
     def filter_for_next_valid_state(self, index):
+        if not self.valid_transition_filter:
+            return pd.Index([])
+
         characteristics = self.population_view.subview(['age', 'sex',
                                                         'high_systolic_blood_pressure_measurement']).get(index)
         characteristics = characteristics.rename(columns={'high_systolic_blood_pressure_measurement':
