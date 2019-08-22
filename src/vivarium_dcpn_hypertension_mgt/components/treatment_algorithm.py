@@ -1,11 +1,10 @@
-from collections import namedtuple
-
 import scipy
 import numpy as np
 import pandas as pd
 
 from vivarium.framework.engine import Builder
-from vivarium_dcpn_hypertension_mgt.components.utilities import filter_dict_for_guideline, get_durations_in_range
+from vivarium_dcpn_hypertension_mgt.components.utilities import (get_dict_for_guideline, get_durations_in_range,
+                                                                 FollowupDuration)
 
 
 class Adherence:
@@ -131,92 +130,11 @@ class HealthcareUtilization:
         return utilization
 
 
-# duration type is one of 'constant', 'options', or 'range' and duration values
-# is respectively a single value, a list of values or a tuple with two values:
-# start of range and end of range both inclusive. All values in days.
-FollowupDuration = namedtuple('FollowupDuration', 'duration_type duration_values')
-ConditionalFollowup = namedtuple('ConditionalFollowup', 'age measured_sbp followup_duration')
-
-
 class TreatmentAlgorithm:
 
     configuration_defaults = {
         'high_systolic_blood_pressure_measurement': {
             'probability': 1.0,
-        }
-    }
-
-    guideline_thresholds = {
-        'icu': 180,
-        'guideline': {
-            'baseline': {
-                'immediate_tx': None,
-                'controlled': 140,  # TODO: verify with MW that 140 is the appropriate threshold for baseline
-            },
-            'aha': {
-                'immediate_tx': 160,
-                'controlled': 130,
-            },
-            'china': {
-                'immediate_tx': None,
-                'controlled': [(pd.Interval(0, 80, closed='left'), 140),  # (age interval applies to, threshold)
-                               (pd.Interval(80, 125, closed='left'), 150)],
-            },
-            'who': {
-                'immediate_tx': 160,
-                'controlled': 140,
-            }
-        }
-    }
-
-    followup_schedules = {  # top-level keys are visit type during which followup (of type in sub-keys) is being scheduled
-        'background': {
-            'maintenance': FollowupDuration('constant', 28),
-            'confirmatory': FollowupDuration('options', [2*7, 3*7, 4*7])  # 2, 3, or 4 weeks
-        },
-        'maintenance': {
-            'maintenance': FollowupDuration('constant', 28),
-            'reassessment': FollowupDuration('range', (3*28, 6*28))  # 3-6 months
-        },
-        'confirmatory': {
-            'maintenance': FollowupDuration('constant', 28),
-            'reassessment': {
-                'guideline': {
-                    'baseline': None,
-                    'who': None,
-                    'aha': [(ConditionalFollowup(age=pd.Interval(0, 125, closed='left'),
-                                                 measured_sbp=pd.Interval(130, 180, closed='left'),
-                                                 followup_duration=FollowupDuration('range', (3*28, 6*28))),  # 3-6 mos
-                             )],
-                    'china': [ConditionalFollowup(age=pd.Interval(0, 80, closed='left'),
-                                                  measured_sbp=pd.Interval(140, 180, closed='left'),
-                                                  followup_duration=FollowupDuration('range', (1*28, 3*28))),  # 1-3 mos
-                              ConditionalFollowup(age=pd.Interval(80, 125, closed='left'),
-                                                  measured_sbp=pd.Interval(60, 180, closed='left'),
-                                                  followup_duration=FollowupDuration('constant', 3*28))],  # 3 mos
-                }
-            }
-        },
-        'reassessment': {
-            'maintenance': FollowupDuration('constant', 28),
-            'reassessment': {
-                'guideline': {
-                    'baseline': None,
-                    'who': None,
-                    'aha': [ConditionalFollowup(age=pd.Interval(0, 125, closed='left'),
-                                                measured_sbp=pd.Interval(120, 180, closed='left'),
-                                                followup_duration=FollowupDuration('range', (3*28, 6*28))),  # 3-6 mos
-                            ConditionalFollowup(age=pd.Interval(0, 125, closed='left'),
-                                                measured_sbp=pd.Interval(60, 120, closed='left'),
-                                                followup_duration=FollowupDuration('constant', 365.25))],  # 1 yr
-                    'china': [ConditionalFollowup(age=pd.Interval(0, 125, closed='left'),
-                                                  measured_sbp=pd.Interval(130, 180, closed='left'),
-                                                  followup_duration=FollowupDuration('range', (1*28, 3*28))),  # 1-3 mos
-                              ConditionalFollowup(age=pd.Interval(0, 125, closed='left'),
-                                                  measured_sbp=pd.Interval(60, 130, closed='left'),
-                                                  followup_duration=FollowupDuration('constant', 365.25))],  # 1 yr
-                }
-            }
         }
     }
 
@@ -226,8 +144,8 @@ class TreatmentAlgorithm:
 
     def setup(self, builder):
         guideline = builder.configuration.hypertension_drugs.guideline
-        self.guideline_thresholds = filter_dict_for_guideline(self.guideline_thresholds, guideline)
-        self.followup_schedules = filter_dict_for_guideline(self.followup_schedules, guideline)
+        self.guideline_thresholds = get_dict_for_guideline(guideline, 'thresholds')
+        self.followup_schedules = get_dict_for_guideline(guideline, 'followup_schedules')
 
         self.measure_sbp = MeasuredSBP()
         builder.components.add_components([Adherence(), HealthcareUtilization(),
