@@ -159,7 +159,7 @@ class TreatmentAlgorithm:
 
         self.sim_start = pd.Timestamp(**builder.configuration.time.start)
         columns_created = ['followup_date', 'followup_duration', 'followup_type', 'last_visit_date',
-                           'intensive_care_unit_visits_count']
+                           'intensive_care_unit_visits_count', 'last_visit_type']
         columns_required = ['treatment_profile']
         builder.population.initializes_simulants(self.on_initialize_simulants,
                                                  requires_columns=columns_required,
@@ -188,7 +188,8 @@ class TreatmentAlgorithm:
                       .query("treatment_profile != 'no_treatment_1'")).index
 
         initialize = pd.DataFrame({'followup_date': pd.NaT, 'followup_duration': pd.NaT, 'followup_type': None,
-                                   'last_visit_date': pd.NaT, 'intensive_care_unit_visits_count': 0},
+                                   'last_visit_date': pd.NaT, 'last_visit_type': None,
+                                   'intensive_care_unit_visits_count': 0},
                                   index=pop_data.index)
 
         initialize.loc[sims_on_tx, ['followup_duration', 'followup_type']] = pd.Timedelta(days=180), 'maintenance'
@@ -198,6 +199,7 @@ class TreatmentAlgorithm:
                                            index=sims_on_tx)
         initialize.loc[sims_on_tx, 'followup_date'] = durations + self.sim_start
         initialize.loc[sims_on_tx, 'last_visit_date'] = self.sim_start - durations
+        initialize.loc[sims_on_tx, 'last_visit_type'] = 'maintenance'
 
         self._prescription_filled = self._prescription_filled.append(pd.Series(False, pop_data.index))
         self._prescription_filled.loc[sims_on_tx] = True
@@ -211,6 +213,9 @@ class TreatmentAlgorithm:
 
         followup_pop = event.index[followup_scheduled]
         followup_attendance = self.followup_adherence(followup_pop)
+
+        pop.loc[followup_pop[followup_attendance], 'last_visit_type'] = \
+            pop.loc[followup_pop[followup_attendance], 'followup_type']
         self.attend_followup(followup_pop[followup_attendance], event.time)
         self.reschedule_followup(followup_pop[~followup_attendance])
 
@@ -222,6 +227,7 @@ class TreatmentAlgorithm:
         self.attend_background(background_attending, event.time)
 
         pop.loc[background_attending.union(followup_pop[followup_attendance]), 'last_visit_date'] = event.time
+        pop.loc[background_attending, 'last_visit_type'] = 'background'
         self.population_view.update(pop.loc[:, 'last_visit_date'])
 
     def reschedule_followup(self, index):
