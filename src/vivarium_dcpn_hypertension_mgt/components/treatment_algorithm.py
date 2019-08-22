@@ -330,7 +330,7 @@ class TreatmentAlgorithm:
         if isinstance(threshold, (int, float)):
             uncontrolled = pop[pop.high_systolic_blood_pressure_measurement >= threshold].index
         else:  # list of (age interval threshold applies to, threshold)
-            above_threshold = pd.Series(True, index=index)
+            above_threshold = pd.Series(False, index=index)
             for ct in threshold:
                 above_threshold |= (pop.age.apply(lambda a: a in ct[0])
                                     & pop.high_systolic_blood_pressure_measurement >= ct[1])
