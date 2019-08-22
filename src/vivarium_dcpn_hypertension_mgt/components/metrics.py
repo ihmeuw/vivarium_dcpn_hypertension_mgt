@@ -56,9 +56,9 @@ class SampleHistoryObserver:
                           'ischemic_stroke_incidence_rate':
                               builder.value.get_value('ischemic_stroke.incidence_rate'),
                           'intracerebral_hemorrhage_incidence_rate':
-                              builder.value.get_value('intracerebral_hemorrhage_disease.incidence_rate'),
+                              builder.value.get_value('intracerebral_hemorrhage.incidence_rate'),
                           'subarachnoid_hemorrhage_disease_incidence_rate':
-                              builder.value.get_value('subarachnoid_hemorrhage_disease.incidence_rate'),
+                              builder.value.get_value('subarachnoid_hemorrhage.incidence_rate'),
                           }
 
         builder.event.register_listener('collect_metrics', self.record)
