@@ -285,11 +285,11 @@ def filter_dict_for_guideline(d, guideline):
     return collapse_dict(d)
 
 
-def get_durations_in_range(randomness, low: int, high: int, index: pd.Index):
+def get_durations_in_range(randomness, low: int, high: int, index: pd.Index, randomness_key=None):
     """Get pd.Timedelta durations between low and high days, both inclusive for
     given index using giving randomness."""
     to_time_delta = np.vectorize(lambda d: pd.Timedelta(days=d))
-    np.random.seed(randomness.get_seed())
+    np.random.seed(randomness.get_seed(randomness_key))
     return pd.Series(to_time_delta(np.random.random_integers(low=low, high=high, size=len(index))), index=index)
 
 
