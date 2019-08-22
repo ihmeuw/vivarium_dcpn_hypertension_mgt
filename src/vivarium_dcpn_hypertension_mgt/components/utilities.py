@@ -275,7 +275,7 @@ def filter_dict_for_guideline(d, guideline):
                     for sub_k, sub_v in g.items():
                         collapsed[sub_k] = sub_v
                 else:
-                    return g
+                    collapsed = g
             elif isinstance(v, dict):
                 collapsed[k] = collapse_dict(v)
             else:
