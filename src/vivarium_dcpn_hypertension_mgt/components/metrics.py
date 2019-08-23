@@ -21,6 +21,7 @@ class SampleHistoryObserver:
         self.sample_index = None
 
     def setup(self, builder):
+        self.clock = builder.time.clock()
         self.sample_history_parameters = builder.configuration.metrics.sample_history_observer
         self.randomness = builder.randomness.get_stream("sample_history")
 
@@ -58,7 +59,9 @@ class SampleHistoryObserver:
                               builder.value.get_value('subarachnoid_hemorrhage.incidence_rate'),
                           }
 
-        builder.event.register_listener('collect_metrics', self.record)
+        # record on time_step__prepare to make sure all pipelines + state table
+        # columns are reflective of same time
+        builder.event.register_listener('time_step__prepare', self.record)
         builder.event.register_listener('simulation_end', self.dump)
 
     def get_sample_index(self, pop_data):
@@ -79,12 +82,13 @@ class SampleHistoryObserver:
             pipeline_results.append(values)
 
         record = pd.concat(pipeline_results + [pop], axis=1)
-        record['time'] = event.time
+        record['time'] = self.clock()
         record.index.rename("simulant", inplace=True)
         record.set_index('time', append=True, inplace=True)
 
         self.history_snapshots.append(record)
 
     def dump(self, event):
+        self.record()  # record once more since we were recording at the beginning of each time step
         sample_history = pd.concat(self.history_snapshots, axis=0)
         sample_history.to_hdf(self.sample_history_parameters.path, key='histories')
