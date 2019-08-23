@@ -238,23 +238,24 @@ class TreatmentAlgorithm:
 
     def schedule_followup(self, index: pd.Index, followup_type: str,
                           followup_duration: FollowupDuration, current_date: pd.Timestamp, from_visit: str):
-        if followup_duration.duration_type == 'constant':
-            durations = pd.Timedelta(days=followup_duration.duration_values)
-        elif followup_duration.duration_type == 'range':
-            durations = get_durations_in_range(self.randomness['followup_scheduling'],
-                                               low=followup_duration.duration_values[0],
-                                               high=followup_duration.duration_values[1],
-                                               index=index, randomness_key=f'{from_visit}_to_{followup_type}')
-        else:  # options
-            options = [pd.Timedelta(days=x) for x in followup_duration.duration_values]
-            durations = self.randomness['followup_scheduling'].choice(index, options,
-                                                                      additional_key=f'{from_visit}_to_{followup_type}')
+        if not index.empty:
+            if followup_duration.duration_type == 'constant':
+                durations = pd.Timedelta(days=followup_duration.duration_values)
+            elif followup_duration.duration_type == 'range':
+                durations = get_durations_in_range(self.randomness['followup_scheduling'],
+                                                   low=followup_duration.duration_values[0],
+                                                   high=followup_duration.duration_values[1],
+                                                   index=index, randomness_key=f'{from_visit}_to_{followup_type}')
+            else:  # options
+                options = [pd.Timedelta(days=x) for x in followup_duration.duration_values]
+                durations = self.randomness['followup_scheduling'].choice(index, options,
+                                                                          additional_key=f'{from_visit}_to_{followup_type}')
 
-        followups = self.population_view.subview(['followup_date', 'followup_duration', 'followup_type']).get(index)
-        followups['followup_type'] = followup_type
-        followups['followup_duration'] = durations
-        followups['followup_date'] = current_date + durations
-        self.population_view.update(followups)
+            followups = self.population_view.subview(['followup_date', 'followup_duration', 'followup_type']).get(index)
+            followups['followup_type'] = followup_type
+            followups['followup_duration'] = durations
+            followups['followup_date'] = current_date + durations
+            self.population_view.update(followups)
 
     def attend_followup(self, index, visit_date):
         pop = self.population_view.subview(['followup_type', 'age']).get(index)
