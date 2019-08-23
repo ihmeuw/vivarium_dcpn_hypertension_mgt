@@ -89,6 +89,6 @@ class SampleHistoryObserver:
         self.history_snapshots.append(record)
 
     def dump(self, event):
-        self.record()  # record once more since we were recording at the beginning of each time step
+        self.record(event)  # record once more since we were recording at the beginning of each time step
         sample_history = pd.concat(self.history_snapshots, axis=0)
         sample_history.to_hdf(self.sample_history_parameters.path, key='histories')
