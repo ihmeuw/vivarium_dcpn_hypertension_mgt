@@ -21,7 +21,6 @@ class SampleHistoryObserver:
         self.sample_index = None
 
     def setup(self, builder):
-        self.clock = builder.time.clock()
         self.sample_history_parameters = builder.configuration.metrics.sample_history_observer
         self.randomness = builder.randomness.get_stream("sample_history")
 
@@ -84,7 +83,7 @@ class SampleHistoryObserver:
             pipeline_results.append(values)
 
         record = pd.concat(pipeline_results + [pop], axis=1)
-        record['time'] = self.clock()
+        record['time'] = event.time
         record.index.rename("simulant", inplace=True)
         record.set_index('time', append=True, inplace=True)
 
