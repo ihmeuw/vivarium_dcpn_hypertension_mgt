@@ -45,9 +45,7 @@ class SampleHistoryObserver:
         self.population_view = builder.population.get_view(columns_required)
 
         # keys will become column names in the output
-        self.pipelines = {'mortality_rate': builder.value.get_value('mortality_rate'),
-                          'disability_weight': builder.value.get_value('disability_weight'),
-                          'rx_filled': builder.value.get_value('rx_fill.currently_filled'),
+        self.pipelines = {'rx_filled': builder.value.get_value('rx_fill.currently_filled'),
                           'medication_effect': builder.value.get_value('hypertension_drugs.effect_size'),
                           'true_sbp': builder.value.get_value('high_systolic_blood_pressure.exposure'),
                           'ischemic_heart_disease_incidence_rate':
@@ -77,8 +75,6 @@ class SampleHistoryObserver:
         pipeline_results = []
         for name, pipeline in self.pipelines.items():
             values = pipeline(pop.index)
-            if name == 'mortality_rate':
-                values = values.sum(axis=1)
             values = values.rename(name)
             pipeline_results.append(values)
 
