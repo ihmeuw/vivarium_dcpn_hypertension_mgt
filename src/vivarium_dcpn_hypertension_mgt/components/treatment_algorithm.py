@@ -287,8 +287,8 @@ class TreatmentAlgorithm:
                                        followups['reassessment'], visit_date, from_visit=visit_type)
             elif isinstance(reassessment_schedules, list):  # list of ConditionalFollowups
                 for cf in reassessment_schedules:
-                    conditional_grp = pop[pop.age.apply(lambda a: a in cf.age) &
-                            pop.high_systolic_blood_pressure_measurement.apply(lambda s: s in cf.measured_sbp)].index
+                    conditional_grp = (pop[pop.age.apply(lambda a: a in cf.age)].index
+                                       .union(sbp[sbp.apply(lambda s: s in cf.measured_sbp)].index))
                     self.schedule_followup(conditional_grp.intersection(to_schedule), 'reassessment',
                                            cf.followup_duration, visit_date, from_visit=visit_type)
             else:  # guideline doesn't have mandate any reassessment visits scheduled from this visit_type
