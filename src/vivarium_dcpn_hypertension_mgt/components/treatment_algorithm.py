@@ -67,7 +67,8 @@ class MeasuredSBP:
         self.true_exposure = builder.value.get_value(f'{self.risk}.exposure')
 
         self.measurement_column = self.name
-        columns_created = [self.measurement_column]
+        self.measurement_time_column = f'{self.risk}_last_measurement_date'
+        columns_created = [self.measurement_column, self.measurement_time_column]
 
         builder.population.initializes_simulants(self.on_initialize_simulants,
                                                  creates_columns=columns_created)
@@ -76,10 +77,11 @@ class MeasuredSBP:
 
     def on_initialize_simulants(self, pop_data):
         self.population_view.update(
-            pd.Series(np.nan, name=self.measurement_column, index=pop_data.index)
+            pd.DataFrame({self.measurement_column: np.nan, self.measurement_time_column: pd.NaT}, index=pop_data.index)
         )
 
-    def __call__(self, idx_measure: pd.Index, idx_record_these: pd.Index, idx_average_these: pd.Index):
+    def __call__(self, idx_measure: pd.Index, idx_record_these: pd.Index, idx_average_these: pd.Index,
+                 event_time: pd.Timestamp):
         draw = self.randomness.get_draw(idx_measure)
         if self.measurement_error:
             noise = scipy.stats.norm.ppf(draw, scale=self.measurement_error)
@@ -94,8 +96,9 @@ class MeasuredSBP:
         hypertension_measurement.loc[idx_average_these] = (hypertension_measurement.loc[idx_average_these] +
                self.population_view.get(idx_measure).loc[idx_average_these, self.measurement_column]) / 2
 
-        measurement = self.population_view.get(idx_measure)[self.measurement_column]
-        measurement.loc[idx_record_these] = hypertension_measurement
+        measurement = self.population_view.get(idx_measure)
+        measurement.loc[idx_record_these, self.measurement_column] = hypertension_measurement
+        measurement.loc[:, self.measurement_time_column] = event_time
         self.population_view.update(measurement)
 
         return hypertension_measurement
@@ -155,7 +158,8 @@ class TreatmentAlgorithm:
         self.clock = builder.time.clock()
 
         self.sim_start = pd.Timestamp(**builder.configuration.time.start)
-        columns_created = ['followup_date', 'followup_duration', 'followup_type', 'intensive_care_unit_visits_count']
+        columns_created = ['followup_date', 'followup_duration', 'followup_type', 'last_visit_date',
+                           'intensive_care_unit_visits_count', 'last_visit_type']
         columns_required = ['treatment_profile']
         builder.population.initializes_simulants(self.on_initialize_simulants,
                                                  requires_columns=columns_required,
@@ -184,6 +188,7 @@ class TreatmentAlgorithm:
                       .query("treatment_profile != 'no_treatment_1'")).index
 
         initialize = pd.DataFrame({'followup_date': pd.NaT, 'followup_duration': pd.NaT, 'followup_type': None,
+                                   'last_visit_date': pd.NaT, 'last_visit_type': None,
                                    'intensive_care_unit_visits_count': 0},
                                   index=pop_data.index)
 
@@ -193,6 +198,8 @@ class TreatmentAlgorithm:
                                            low=0, high=180,
                                            index=sims_on_tx)
         initialize.loc[sims_on_tx, 'followup_date'] = durations + self.sim_start
+        initialize.loc[sims_on_tx, 'last_visit_date'] = self.sim_start - durations
+        initialize.loc[sims_on_tx, 'last_visit_type'] = 'maintenance'
 
         self._prescription_filled = self._prescription_filled.append(pd.Series(False, pop_data.index))
         self._prescription_filled.loc[sims_on_tx] = True
@@ -206,6 +213,9 @@ class TreatmentAlgorithm:
 
         followup_pop = event.index[followup_scheduled]
         followup_attendance = self.followup_adherence(followup_pop)
+
+        pop.loc[followup_pop[followup_attendance], 'last_visit_type'] = \
+            pop.loc[followup_pop[followup_attendance], 'followup_type']
         self.attend_followup(followup_pop[followup_attendance], event.time)
         self.reschedule_followup(followup_pop[~followup_attendance])
 
@@ -216,6 +226,10 @@ class TreatmentAlgorithm:
 
         self.attend_background(background_attending, event.time)
 
+        pop.loc[background_attending.union(followup_pop[followup_attendance]), 'last_visit_date'] = event.time
+        pop.loc[background_attending, 'last_visit_type'] = 'background'
+        self.population_view.update(pop.loc[:, 'last_visit_date'])
+
     def reschedule_followup(self, index):
         followups = self.population_view.subview(['followup_date', 'followup_duration']).get(index)
         followups.followup_date = followups.followup_date + followups.followup_duration
@@ -224,23 +238,24 @@ class TreatmentAlgorithm:
 
     def schedule_followup(self, index: pd.Index, followup_type: str,
                           followup_duration: FollowupDuration, current_date: pd.Timestamp, from_visit: str):
-        if followup_duration.duration_type == 'constant':
-            durations = pd.Timedelta(days=followup_duration.duration_values)
-        elif followup_duration.duration_type == 'range':
-            durations = get_durations_in_range(self.randomness['followup_scheduling'],
-                                               low=followup_duration.duration_values[0],
-                                               high=followup_duration.duration_values[1],
-                                               index=index, randomness_key=f'{from_visit}_to_{followup_type}')
-        else:  # options
-            options = [pd.Timedelta(days=x) for x in followup_duration.duration_values]
-            durations = self.randomness['followup_scheduling'].choice(index, options,
-                                                                      additional_key=f'{from_visit}_to_{followup_type}')
+        if not index.empty:
+            if followup_duration.duration_type == 'constant':
+                durations = pd.Timedelta(days=followup_duration.duration_values)
+            elif followup_duration.duration_type == 'range':
+                durations = get_durations_in_range(self.randomness['followup_scheduling'],
+                                                   low=followup_duration.duration_values[0],
+                                                   high=followup_duration.duration_values[1],
+                                                   index=index, randomness_key=f'{from_visit}_to_{followup_type}')
+            else:  # options
+                options = [pd.Timedelta(days=x) for x in followup_duration.duration_values]
+                durations = self.randomness['followup_scheduling'].choice(index, options,
+                                                                          additional_key=f'{from_visit}_to_{followup_type}')
 
-        followups = self.population_view.subview(['followup_date', 'followup_duration', 'followup_type']).get(index)
-        followups['followup_type'] = followup_type
-        followups['followup_duration'] = durations
-        followups['followup_date'] = current_date + durations
-        self.population_view.update(followups)
+            followups = self.population_view.subview(['followup_date', 'followup_duration', 'followup_type']).get(index)
+            followups['followup_type'] = followup_type
+            followups['followup_duration'] = durations
+            followups['followup_date'] = current_date + durations
+            self.population_view.update(followups)
 
     def attend_followup(self, index, visit_date):
         pop = self.population_view.subview(['followup_type', 'age']).get(index)
@@ -248,7 +263,7 @@ class TreatmentAlgorithm:
 
         # measure sbp and use the average of this measurement + last for those here for confirmatory visit
         to_average = followup_groups['confirmatory'] if 'confirmatory' in followup_groups.index else pd.Index([])
-        sbp = self.measure_sbp(index, idx_record_these=index, idx_average_these=to_average)
+        sbp = self.measure_sbp(index, idx_record_these=index, idx_average_these=to_average, event_time=visit_date)
         # send everyone w/ sbp >= icu threshold to ICU and don't treat them further
         sent_to_icu = self.send_to_icu(sbp)
         sbp = sbp.loc[~sbp.index.isin(sent_to_icu)]
@@ -273,8 +288,8 @@ class TreatmentAlgorithm:
                                        followups['reassessment'], visit_date, from_visit=visit_type)
             elif isinstance(reassessment_schedules, list):  # list of ConditionalFollowups
                 for cf in reassessment_schedules:
-                    conditional_grp = pop[pop.age.apply(lambda a: a in cf.age) &
-                            pop.high_systolic_blood_pressure_measurement.apply(lambda s: s in cf.measured_sbp)].index
+                    conditional_grp = (pop[pop.age.apply(lambda a: a in cf.age)].index
+                                       .union(sbp[sbp.apply(lambda s: s in cf.measured_sbp)].index))
                     self.schedule_followup(conditional_grp.intersection(to_schedule), 'reassessment',
                                            cf.followup_duration, visit_date, from_visit=visit_type)
             else:  # guideline doesn't have mandate any reassessment visits scheduled from this visit_type
@@ -298,7 +313,8 @@ class TreatmentAlgorithm:
         no_followup_scheduled = sbp_measured_idx[self.population_view.subview(['followup_date'])
             .get(sbp_measured_idx)['followup_date'].isnull()]
 
-        sbp = self.measure_sbp(sbp_measured_idx, idx_record_these=no_followup_scheduled, idx_average_these=pd.Index([]))
+        sbp = self.measure_sbp(sbp_measured_idx, idx_record_these=no_followup_scheduled, idx_average_these=pd.Index([]),
+                               event_time=visit_date)
 
         # send everyone w/ sbp >= icu threshold to ICU and don't treat them further
         sent_to_icu = self.send_to_icu(sbp)

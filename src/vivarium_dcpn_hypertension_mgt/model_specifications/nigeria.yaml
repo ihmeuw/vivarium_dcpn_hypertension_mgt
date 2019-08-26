@@ -46,6 +46,7 @@ components:
             - TreatmentProfileModel()
             - TreatmentAlgorithm()
             - TreatmentEffect()
+            - SampleHistoryObserver()
 
 configuration:
     input_data:
@@ -65,7 +66,7 @@ configuration:
             month: 1
             day: 1
         end:
-            year: 2030  # TODO: no sim end date in concept model
+            year: 2035
             month: 1
             day: 1
         step_size: 7 # Days
@@ -84,14 +85,17 @@ configuration:
             by_age: False
             by_sex: False
             by_year: False
+        sample_history_observer:
+            sample_size: 1000
+            path: /share/costeffectiveness/results/vivarium_dcpn_hypertension_mgt/sample_history.hdf
 
     hypertension_drugs:
         ace_inhibitors_or_angiotensin_ii_blockers: 'angiotensin_ii_blockers' # one of: ['ace_inhibitors', 'angiotensin_ii_blockers']
         other_drugs_efficacy:
             mono: 6
-            dual: 6
-            triple: 6
-            quad: 6
+            dual: 7
+            triple: 8
+            quad: 9
         guideline: 'china'  # one of: ["baseline", "china", "aha", "who"]
 
     high_systolic_blood_pressure_measurement:
