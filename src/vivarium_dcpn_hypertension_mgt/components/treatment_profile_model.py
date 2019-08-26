@@ -45,6 +45,13 @@ class TreatmentProfile(State):
 
         return t
 
+    def get_valid_filter(self):
+        valid_transitions = []
+        for transition in self.transition_set:
+            if not isinstance(transition.output_state, NullTreatmentProfile):
+                valid_transitions.append(transition.domain_filter)
+        return " or ".join(set(valid_transitions))
+
     def is_valid(self):
         for domain_filter, probabilities in self._domain_filters.items():
             if sum(probabilities) != 1:
@@ -240,7 +247,7 @@ class TreatmentProfileModel(Machine):
         builder.value.register_value_producer('prescribed_medications', source=self.get_prescribed_medications)
         
         self.cvd_risk_cat = builder.value.get_value('cvd_risk_category')
-        self.valid_transition_filter = self.get_valid_transition_filter()
+        self.valid_transition_filters = self.get_valid_transition_filters()
 
     def on_initialize_simulants(self, pop_data):
         initial_tx_profiles = self.get_initial_profiles(pop_data.index)
@@ -265,16 +272,14 @@ class TreatmentProfileModel(Machine):
 
         return profile_choices
 
-    def get_valid_transition_filter(self):
-        valid_transitions = []
+    def get_valid_transition_filters(self):
+        valid_filters = dict()
         for state in self.states:
-            for transition in state.transition_set:
-                if not isinstance(transition.output_state, NullTreatmentProfile):
-                    valid_transitions.append(transition.domain_filter)
-        return " or ".join(set(valid_transitions))
+            valid_filters[state.state_id] = state.get_valid_filter()
+        return valid_filters
 
     def filter_for_next_valid_state(self, index):
-        if not self.valid_transition_filter:
+        if not self.valid_transition_filters:
             return pd.Index([])
 
         characteristics = self.population_view.subview(['age', 'sex',
@@ -282,7 +287,13 @@ class TreatmentProfileModel(Machine):
         characteristics = characteristics.rename(columns={'high_systolic_blood_pressure_measurement':
                                                               'systolic_blood_pressure'})
         characteristics['cvd_risk_cat'] = self.cvd_risk_cat(index)
-        return characteristics.query(self.valid_transition_filter).index
+
+        valid_index = pd.Index([])
+        for state, pop_in_state in self._get_state_pops(index):
+            if not pop_in_state.empty and self.valid_transition_filters[state.state_id]:
+                valid_in_state = characteristics.loc[pop_in_state.index].query(self.valid_transition_filters[state.state_id]).index
+                valid_index = valid_index.union(valid_in_state)
+        return valid_index
 
     def get_prescribed_medications(self, index):
         df = pd.DataFrame({d: (0.0 if d != 'other' else 'none') for d in HYPERTENSION_DRUGS}, index=index)
