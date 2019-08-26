@@ -211,7 +211,7 @@ class TreatmentAlgorithm:
 
         followup_scheduled = (self.clock() < pop.followup_date) & (pop.followup_date <= event.time)
 
-        followup_pop = event.index[followup_scheduled]
+        followup_pop = pop.index[followup_scheduled]  # event index includes untracked sims so use pop index instead
         followup_attendance = self.followup_adherence(followup_pop)
 
         pop.loc[followup_pop[followup_attendance], 'last_visit_type'] = \
@@ -219,7 +219,7 @@ class TreatmentAlgorithm:
         self.attend_followup(followup_pop[followup_attendance], event.time)
         self.reschedule_followup(followup_pop[~followup_attendance])
 
-        background_eligible = event.index[~followup_scheduled]
+        background_eligible = pop.index[~followup_scheduled]
         background_attending = (self.randomness['background_visit_attendance']
                                 .filter_for_rate(background_eligible,
                                                  self.healthcare_utilization(background_eligible).values))
