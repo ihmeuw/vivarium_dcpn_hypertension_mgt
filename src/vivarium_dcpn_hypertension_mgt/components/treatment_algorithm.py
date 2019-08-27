@@ -231,7 +231,7 @@ class TreatmentAlgorithm:
 
         pop.loc[background_attending.union(followup_pop[followup_attendance]), 'last_visit_date'] = event.time
         pop.loc[background_attending, 'last_visit_type'] = 'background'
-        self.population_view.update(pop.loc[:, ['last_visit_date', 'last_missed_appt_date']])
+        self.population_view.update(pop.loc[:, ['last_visit_type', 'last_visit_date', 'last_missed_appt_date']])
 
     def reschedule_followup(self, index):
         followups = self.population_view.subview(['followup_date', 'followup_duration']).get(index)
