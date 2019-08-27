@@ -42,7 +42,8 @@ class SampleHistoryObserver:
                             'last_visit_type',
                             'high_systolic_blood_pressure_measurement',
                             'high_systolic_blood_pressure_last_measurement_date',
-                            'treatment_profile']
+                            'treatment_profile',
+                            'last_missed_appt_date']
         self.population_view = builder.population.get_view(columns_required)
 
         # keys will become column names in the output
