@@ -2,6 +2,7 @@ import scipy
 import numpy as np
 import pandas as pd
 
+from loguru import logger
 from vivarium.framework.engine import Builder
 from vivarium_dcpn_hypertension_mgt.components.utilities import (get_dict_for_guideline, get_durations_in_range,
                                                                  FollowupDuration)
@@ -164,7 +165,8 @@ class TreatmentAlgorithm:
         builder.population.initializes_simulants(self.on_initialize_simulants,
                                                  requires_columns=columns_required,
                                                  creates_columns=columns_created)
-        self.population_view = builder.population.get_view(columns_required + columns_created)
+        self.population_view = builder.population.get_view(columns_required + columns_created + ['alive'],
+                                                           query='alive == "alive"')
 
         self.randomness = {'followup_scheduling': builder.randomness.get_stream('followup_scheduling'),
                            'background_visit_attendance': builder.randomness.get_stream('background_visit_attendance'),
@@ -211,7 +213,7 @@ class TreatmentAlgorithm:
 
         followup_scheduled = (self.clock() < pop.followup_date) & (pop.followup_date <= event.time)
 
-        followup_pop = event.index[followup_scheduled]
+        followup_pop = pop.index[followup_scheduled]  # event index includes untracked sims so use pop index instead
         followup_attendance = self.followup_adherence(followup_pop)
 
         pop.loc[followup_pop[followup_attendance], 'last_visit_type'] = \
@@ -219,7 +221,7 @@ class TreatmentAlgorithm:
         self.attend_followup(followup_pop[followup_attendance], event.time)
         self.reschedule_followup(followup_pop[~followup_attendance])
 
-        background_eligible = event.index[~followup_scheduled]
+        background_eligible = pop.index[~followup_scheduled]
         background_attending = (self.randomness['background_visit_attendance']
                                 .filter_for_rate(background_eligible,
                                                  self.healthcare_utilization(background_eligible).values))
