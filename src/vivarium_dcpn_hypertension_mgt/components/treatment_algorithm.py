@@ -164,7 +164,7 @@ class TreatmentAlgorithm:
         builder.population.initializes_simulants(self.on_initialize_simulants,
                                                  requires_columns=columns_required,
                                                  creates_columns=columns_created)
-        self.population_view = builder.population.get_view(columns_required + columns_created)
+        self.population_view = builder.population.get_view(columns_required + columns_created + ['alive'])
 
         self.randomness = {'followup_scheduling': builder.randomness.get_stream('followup_scheduling'),
                            'background_visit_attendance': builder.randomness.get_stream('background_visit_attendance'),
@@ -207,7 +207,7 @@ class TreatmentAlgorithm:
         self.population_view.update(initialize)
 
     def on_time_step(self, event):
-        pop = self.population_view.get(event.index)
+        pop = self.population_view.get(event.index).query('alive == "alive"')
 
         followup_scheduled = (self.clock() < pop.followup_date) & (pop.followup_date <= event.time)
 
