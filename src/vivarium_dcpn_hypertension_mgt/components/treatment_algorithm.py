@@ -132,7 +132,7 @@ class HealthcareUtilization:
         distributions = scipy.stats.norm(loc=params.value, scale=params.sd_individual_heterogeneity)
         utilization = pd.Series(distributions.ppf(self._propensity[index]), index=index)
         utilization.loc[utilization < 0] = 0.0
-        utilization /= (pd.Timedelta(days=365.25) / pd.Timedelta(days=self.step_size))  # scale to time step size
+        utilization *= pd.Timedelta(days=self.step_size) / pd.Timedelta(days=365.25)  # scale to time step size
         return utilization
 
 
