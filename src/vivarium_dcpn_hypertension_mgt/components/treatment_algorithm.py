@@ -160,7 +160,7 @@ class TreatmentAlgorithm:
 
         self.sim_start = pd.Timestamp(**builder.configuration.time.start)
         columns_created = ['followup_date', 'followup_duration', 'followup_type', 'last_visit_date',
-                           'intensive_care_unit_visits_count', 'last_visit_type']
+                           'intensive_care_unit_visits_count', 'last_visit_type', 'last_missed_appt_date']
         columns_required = ['treatment_profile']
         builder.population.initializes_simulants(self.on_initialize_simulants,
                                                  requires_columns=columns_required,
@@ -190,7 +190,7 @@ class TreatmentAlgorithm:
                       .query("treatment_profile != 'no_treatment_1'")).index
 
         initialize = pd.DataFrame({'followup_date': pd.NaT, 'followup_duration': pd.NaT, 'followup_type': None,
-                                   'last_visit_date': pd.NaT, 'last_visit_type': None,
+                                   'last_visit_date': pd.NaT, 'last_visit_type': None, 'last_missed_appt_date': pd.NaT,
                                    'intensive_care_unit_visits_count': 0},
                                   index=pop_data.index)
 
@@ -220,6 +220,7 @@ class TreatmentAlgorithm:
             pop.loc[followup_pop[followup_attendance], 'followup_type']
         self.attend_followup(followup_pop[followup_attendance], event.time)
         self.reschedule_followup(followup_pop[~followup_attendance])
+        pop.loc[followup_pop[~followup_attendance], 'last_missed_appt_date'] = event.time
 
         background_eligible = pop.index[~followup_scheduled]
         background_attending = (self.randomness['background_visit_attendance']
@@ -230,7 +231,7 @@ class TreatmentAlgorithm:
 
         pop.loc[background_attending.union(followup_pop[followup_attendance]), 'last_visit_date'] = event.time
         pop.loc[background_attending, 'last_visit_type'] = 'background'
-        self.population_view.update(pop.loc[:, 'last_visit_date'])
+        self.population_view.update(pop.loc[:, ['last_visit_type', 'last_visit_date', 'last_missed_appt_date']])
 
     def reschedule_followup(self, index):
         followups = self.population_view.subview(['followup_date', 'followup_duration']).get(index)
@@ -312,11 +313,11 @@ class TreatmentAlgorithm:
         sbp_measured_idx = self.randomness['sbp_measured'].filter_for_probability(index,
                                                                                   self.sbp_measurement_probability)
         # we don't want to record any SBP measurement for people already on hypertension visit plan
-        no_followup_scheduled = sbp_measured_idx[self.population_view.subview(['followup_date'])
-            .get(sbp_measured_idx)['followup_date'].isnull()]
+        no_followup_scheduled = (self.population_view.subview(['followup_date'])
+                                 .get(sbp_measured_idx)['followup_date'].isnull())
 
-        sbp = self.measure_sbp(sbp_measured_idx, idx_record_these=no_followup_scheduled, idx_average_these=pd.Index([]),
-                               event_time=visit_date)
+        sbp = self.measure_sbp(sbp_measured_idx, idx_record_these=sbp_measured_idx[no_followup_scheduled],
+                               idx_average_these=pd.Index([]), event_time=visit_date)
 
         # send everyone w/ sbp >= icu threshold to ICU and don't treat them further
         sent_to_icu = self.send_to_icu(sbp)
@@ -348,8 +349,9 @@ class TreatmentAlgorithm:
         else:  # list of (age interval threshold applies to, threshold)
             above_threshold = pd.Series(False, index=index)
             for ct in threshold:
-                above_threshold |= (pop.age.apply(lambda a: a in ct[0])
-                                    & pop.high_systolic_blood_pressure_measurement >= ct[1])
+                in_age = pop.age.apply(lambda a: a in ct[0])
+                over_sbp = pop.high_systolic_blood_pressure_measurement >= ct[1]
+                above_threshold |= (in_age & over_sbp)
             uncontrolled = pop[above_threshold].index
         return uncontrolled
 
