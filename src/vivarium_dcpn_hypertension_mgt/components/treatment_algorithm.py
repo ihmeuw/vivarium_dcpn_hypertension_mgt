@@ -112,7 +112,6 @@ class HealthcareUtilization:
         return 'healthcare_utilization'
 
     def setup(self, builder):
-        self.step_size = builder.configuration.time.step_size
         self.utilization_data = builder.lookup.build_table(
             builder.data.load('health_technology.hypertension_drugs.healthcare_access'),
             parameter_columns=[('age', 'age_group_start', 'age_group_end')])
@@ -121,7 +120,7 @@ class HealthcareUtilization:
         self._propensity = pd.Series()
         builder.population.initializes_simulants(self.on_initialize_simulants)
 
-        builder.value.register_value_producer('healthcare_utilization_rate',
+        builder.value.register_rate_producer('healthcare_utilization_rate',
                                               source=self.get_utilization_rate)
 
     def on_initialize_simulants(self, pop_data):
@@ -132,7 +131,6 @@ class HealthcareUtilization:
         distributions = scipy.stats.norm(loc=params.value, scale=params.sd_individual_heterogeneity)
         utilization = pd.Series(distributions.ppf(self._propensity[index]), index=index)
         utilization.loc[utilization < 0] = 0.0
-        utilization *= pd.Timedelta(days=self.step_size) / pd.Timedelta(days=365.25)  # scale to time step size
         return utilization
 
 
