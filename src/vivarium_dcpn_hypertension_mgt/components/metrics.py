@@ -58,6 +58,8 @@ class SampleHistoryObserver:
                               builder.value.get_value('intracerebral_hemorrhage.incidence_rate'),
                           'subarachnoid_hemorrhage_disease_incidence_rate':
                               builder.value.get_value('subarachnoid_hemorrhage.incidence_rate'),
+                          'healthcare_utilization_rate':
+                              builder.value.get_value('healthcare_utilization_rate'),
                           }
 
         # record on time_step__prepare to make sure all pipelines + state table
