@@ -112,6 +112,7 @@ class HealthcareUtilization:
         return 'healthcare_utilization'
 
     def setup(self, builder):
+        self.step_size = builder.configuration.time.step_size
         self.utilization_data = builder.lookup.build_table(
             builder.data.load('health_technology.hypertension_drugs.healthcare_access'),
             parameter_columns=[('age', 'age_group_start', 'age_group_end')])
@@ -131,6 +132,7 @@ class HealthcareUtilization:
         distributions = scipy.stats.norm(loc=params.value, scale=params.sd_individual_heterogeneity)
         utilization = pd.Series(distributions.ppf(self._propensity[index]), index=index)
         utilization.loc[utilization < 0] = 0.0
+        utilization /= (pd.Timedelta(days=365.25) / pd.Timedelta(days=self.step_size))  # scale to time step size
         return utilization
 
 
@@ -275,28 +277,37 @@ class TreatmentAlgorithm:
         treated = self.transition_treatment(sbp.index, visit_date)
         self.fill_prescriptions(treated)
 
+        scheduled = pd.Index([])
         # set up followups
         for visit_type, idx in followup_groups.iteritems():
             followups = self.followup_schedules[visit_type]
 
             # schedule maintenance for everyone who was treated
-            self.schedule_followup(treated.intersection(idx), 'maintenance', followups['maintenance'],
+            to_schedule = treated.intersection(idx)
+            self.schedule_followup(to_schedule, 'maintenance', followups['maintenance'],
                                    visit_date, from_visit=visit_type)
-
+            scheduled = scheduled.union(to_schedule)
             # schedule reassessment for everyone who was not treated
             reassessment_schedules = followups['reassessment']
             to_schedule = sbp.index.difference(treated).intersection(idx)
             if isinstance(reassessment_schedules, FollowupDuration):
                 self.schedule_followup(to_schedule, 'reassessment',
                                        followups['reassessment'], visit_date, from_visit=visit_type)
+                scheduled = scheduled.union(to_schedule)
             elif isinstance(reassessment_schedules, list):  # list of ConditionalFollowups
                 for cf in reassessment_schedules:
                     conditional_grp = (pop[pop.age.apply(lambda a: a in cf.age)].index
                                        .union(sbp[sbp.apply(lambda s: s in cf.measured_sbp)].index))
                     self.schedule_followup(conditional_grp.intersection(to_schedule), 'reassessment',
                                            cf.followup_duration, visit_date, from_visit=visit_type)
-            else:  # guideline doesn't have mandate any reassessment visits scheduled from this visit_type
+                    scheduled = scheduled.union(conditional_grp)
+            else:  # guideline doesn't mandate any reassessment visits scheduled from this visit_type
                 pass
+
+        # clear the scheduled followup date for simulants not scheduled for a
+        # follow so they will get properly processed on future background visits
+        self.population_view.update(pd.Series(pd.NaT, index=sbp.index.difference(scheduled).union(sent_to_icu),
+                                              name='followup_date'))
 
     def send_to_icu(self, sbp):
         icu_threshold = self.guideline_thresholds['icu']
