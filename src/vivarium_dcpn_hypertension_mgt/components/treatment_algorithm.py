@@ -325,9 +325,6 @@ class TreatmentAlgorithm:
                 else:  # guideline doesn't mandate any reassessment visits scheduled from this visit_type
                     pass
 
-        if not measured_sbp.index.difference(scheduled).empty:
-            import pdb; pdb.set_trace()
-
         # clear the scheduled followup date for simulants not scheduled for a
         # follow up so they will get properly processed on future background visits
         self.population_view.update(pd.Series(pd.NaT, index=measured_sbp.index.difference(scheduled).union(sent_to_icu),
