@@ -352,6 +352,9 @@ def get_dict_for_guideline(guideline, dictionary_choice):
                                                   followup_duration=FollowupDuration('constant', 365.25))],  # 1 yr
                 }
             }
+        },
+        'intensive_care_unit': {
+            'maintenance': FollowupDuration('constant', 28),
         }
     }
 
