@@ -336,7 +336,7 @@ class TreatmentAlgorithm:
 
         _ = self.transition_treatment(send_to_icu, visit_date)
         # people sent to icu will always get their meds
-        self.fill_prescriptions(send_to_icu, custom_adherence=True)
+        self.fill_prescriptions(send_to_icu, fully_adherent=True)
         self.schedule_followup(send_to_icu, 'maintenance', self.followup_schedules['intensive_care_unit']['maintenance'],
                                visit_date, 'intensive_care_unit')
 
@@ -400,9 +400,9 @@ class TreatmentAlgorithm:
         self.treatment_profile_model.transition(to_transition, event_time)
         return to_transition
 
-    def fill_prescriptions(self, index, custom_adherence: Union[bool, pd.Series] = None):
+    def fill_prescriptions(self, index, fully_adherent: bool = None):
         # prescription_adherence is a boolean pipeline with T for sims who filled prescription, F for sims who didn't
-        rx_adherence = self.prescription_adherence(index) if custom_adherence is None else custom_adherence
+        rx_adherence = self.prescription_adherence(index) if fully_adherent is None else fully_adherent
         self._prescription_filled.loc[index] = rx_adherence
 
     def get_prescriptions_filled(self, index):
