@@ -1,4 +1,4 @@
-import scipy
+from scipy import stats
 
 from loguru import logger
 import numpy as np
@@ -295,6 +295,10 @@ class TreatmentProfileModel(Machine):
                 valid_index = valid_index.union(valid_in_state)
         return valid_index
 
+    def filter_for_prescribed_treatment(self, index):
+        population = self.population_view.subview([self.state_column]).get(index)
+        return population.loc[population[self.state_column] != 'no_treatment_1'].index
+
     def get_prescribed_medications(self, index):
         df = pd.DataFrame({d: (0.0 if d != 'other' else 'none') for d in HYPERTENSION_DRUGS}, index=index)
 
@@ -507,7 +511,7 @@ class TreatmentEffect:
                 if dose_efficacy_parameters[1] == 0.0:  # if sd is 0, no need to draw
                     dose_efficacy = pd.Series(dose_efficacy_parameters[0], index=dose_index)
                 else:
-                    dose_efficacy = pd.Series(scipy.stats.norm.ppf(efficacy_draw, loc=dose_efficacy_parameters[0],
+                    dose_efficacy = pd.Series(stats.norm.ppf(efficacy_draw, loc=dose_efficacy_parameters[0],
                                                                    scale=dose_efficacy_parameters[1]),
                                               index=dose_index)
                 efficacy.append(dose_efficacy)
