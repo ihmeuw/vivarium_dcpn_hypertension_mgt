@@ -308,7 +308,7 @@ def get_dict_for_guideline(guideline, dictionary_choice):
                         'who': FollowupDuration('range', (3 * 28, 6 * 28)),  # 3-6 months
                         'aha': FollowupDuration('range', (3 * 28, 6 * 28)),  # 3-6 months
                         'china': FollowupDuration('constant', 3 * 28),  # 3 months
-                        'baseline': None
+                        'baseline': FollowupDuration('range', (3 * 28, 6 * 28)),  # 3-6 months
                     }
                 }
             }
