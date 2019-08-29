@@ -340,15 +340,13 @@ def get_dict_for_guideline(guideline, dictionary_choice):
                     'who': None,
                     'aha': [ConditionalFollowup(age=pd.Interval(0, 125, closed='left'),
                                                 measured_sbp=pd.Interval(120, 180, closed='left'),
-                                                followup_duration=FollowupDuration('range', (3 * 28, 6 * 28))),
-                            # 3-6 mos
+                                                followup_duration=FollowupDuration('range', (3 * 28, 6 * 28))), # 3-6 mos
                             ConditionalFollowup(age=pd.Interval(0, 125, closed='left'),
                                                 measured_sbp=pd.Interval(60, 120, closed='left'),
                                                 followup_duration=FollowupDuration('constant', 365.25))],  # 1 yr
                     'china': [ConditionalFollowup(age=pd.Interval(0, 125, closed='left'),
                                                   measured_sbp=pd.Interval(130, 180, closed='left'),
-                                                  followup_duration=FollowupDuration('range', (1 * 28, 3 * 28))),
-                              # 1-3 mos
+                                                  followup_duration=FollowupDuration('range', (1 * 28, 3 * 28))), # 1-3 mos
                               ConditionalFollowup(age=pd.Interval(0, 125, closed='left'),
                                                   measured_sbp=pd.Interval(60, 130, closed='left'),
                                                   followup_duration=FollowupDuration('constant', 365.25))],  # 1 yr
