@@ -27,7 +27,8 @@ class SampleHistoryVisualizer:
         v = summarize_hcu(self.data, self.step_size)
         plt.scatter(v.hcu, v.total, color='navy', label='total visits')
         plt.scatter(v.hcu, v.background, color='lightblue', label='background visits only', alpha=0.5)
-        plt.plot(range(0, 15), range(0, 15), linewidth=3, color='black')
+        upper_lim = math.ceil(max(v.total))
+        plt.plot(range(0, upper_lim), range(0, upper_lim), linewidth=3, color='black', linestyle='--')
         plt.legend()
         plt.xlabel('average healthcare utilization rate (# visits/year)')
         plt.ylabel('actual # visits/year in sim')
@@ -205,7 +206,7 @@ def plot_disease_events(simulant, min_sbp):
     events = {'ischemic_heart_disease': 'tab:blue',
               'ischemic_stroke': 'tab:orange',
               'intracerebral_hemorrhage': 'tab:green',
-              'subarachnoid_hemorrhage': 'tab_red'}
+              'subarachnoid_hemorrhage': 'tab:red'}
     for e, color in events.items():
         col = f'{e}_event_time'
         disease_events = simulant.loc[simulant.index == simulant[col], col]
