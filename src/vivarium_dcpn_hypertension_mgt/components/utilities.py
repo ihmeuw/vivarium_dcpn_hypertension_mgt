@@ -276,7 +276,7 @@ def get_dict_for_guideline(guideline, dictionary_choice):
         'guideline': {
             'baseline': {
                 'immediate_tx': None,
-                'controlled': 140,  # TODO: verify with MW that 140 is the appropriate threshold for baseline
+                'controlled': 140,
             },
             'aha': {
                 'immediate_tx': 160,
@@ -301,8 +301,17 @@ def get_dict_for_guideline(guideline, dictionary_choice):
             'confirmatory': FollowupDuration('options', [2 * 7, 3 * 7, 4 * 7])  # 2, 3, or 4 weeks
         },
         'maintenance': {
-            'maintenance': FollowupDuration('constant', 28),
-            'reassessment': FollowupDuration('range', (3 * 28, 6 * 28))  # 3-6 months
+            'maintenance': {
+                'transitioned': FollowupDuration('constant', 28),
+                'untransitioned': {
+                    'guideline': {
+                        'who': FollowupDuration('range', (3 * 28, 6 * 28)),  # 3-6 months
+                        'aha': FollowupDuration('range', (3 * 28, 6 * 28)),  # 3-6 months
+                        'china': FollowupDuration('constant', 3 * 28),  # 3 months
+                        'baseline': FollowupDuration('range', (3 * 28, 6 * 28)),  # 3-6 months
+                    }
+                }
+            }
         },
         'confirmatory': {
             'maintenance': FollowupDuration('constant', 28),
@@ -337,8 +346,7 @@ def get_dict_for_guideline(guideline, dictionary_choice):
                                                 followup_duration=FollowupDuration('constant', 365.25))],  # 1 yr
                     'china': [ConditionalFollowup(age=pd.Interval(0, 125, closed='left'),
                                                   measured_sbp=pd.Interval(130, 180, closed='left'),
-                                                  followup_duration=FollowupDuration('range', (1 * 28, 3 * 28))),
-                              # 1-3 mos
+                                                  followup_duration=FollowupDuration('range', (1 * 28, 3 * 28))), # 1-3 mos
                               ConditionalFollowup(age=pd.Interval(0, 125, closed='left'),
                                                   measured_sbp=pd.Interval(60, 130, closed='left'),
                                                   followup_duration=FollowupDuration('constant', 365.25))],  # 1 yr
@@ -377,9 +385,11 @@ def get_dict_for_guideline(guideline, dictionary_choice):
 def get_durations_in_range(randomness, low: int, high: int, index: pd.Index, randomness_key=None):
     """Get pd.Timedelta durations between low and high days, both inclusive for
     given index using giving randomness."""
-    to_time_delta = np.vectorize(lambda d: pd.Timedelta(days=d))
-    np.random.seed(randomness.get_seed(randomness_key))
-    return pd.Series(to_time_delta(np.random.random_integers(low=low, high=high, size=len(index))), index=index)
-
+    durations = pd.Series([])
+    if not index.empty:
+        to_time_delta = np.vectorize(lambda d: pd.Timedelta(days=d))
+        np.random.seed(randomness.get_seed(randomness_key))
+        durations = pd.Series(to_time_delta(np.random.random_integers(low=low, high=high, size=len(index))), index=index)
+    return durations
 
 

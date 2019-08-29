@@ -241,7 +241,7 @@ class TreatmentAlgorithm:
 
     def schedule_followup(self, index: pd.Index, followup_type: str,
                           followup_duration: FollowupDuration, current_date: pd.Timestamp, from_visit: str):
-        if not index.empty:
+        if not index.empty and followup_duration:
             if followup_duration.duration_type == 'constant':
                 durations = pd.Timedelta(days=followup_duration.duration_values)
             elif followup_duration.duration_type == 'range':
@@ -261,7 +261,7 @@ class TreatmentAlgorithm:
             self.population_view.update(followups)
 
     def attend_followup(self, index, visit_date):
-        pop = self.population_view.subview(['followup_type', 'age']).get(index)
+        pop = self.population_view.subview(['followup_type']).get(index)
         followup_groups = pop.groupby(['followup_type']).apply(lambda g: g.index)
 
         # measure sbp and use the average of this measurement + last for those here for confirmatory visit
@@ -272,39 +272,62 @@ class TreatmentAlgorithm:
         sbp = sbp.loc[~sbp.index.isin(sent_to_icu)]
 
         # transition everyone who has a treatment available
-        treated = self.transition_treatment(sbp.index, visit_date)
-        self.fill_prescriptions(treated)
+        transitioned = self.transition_treatment(sbp.index, visit_date)
 
+        # fill prescriptions for everyone who is on a prescribed treatment -
+        # this may include more sims than just transitioned because some sims
+        # may not have a next treatment available and so will stay on current tx
+        self.fill_prescriptions(self.treatment_profile_model.filter_for_prescribed_treatment(sbp.index))
+
+        self.schedule_followups_from_followup(transitioned, sbp.index.difference(transitioned), followup_groups,
+                                              visit_date, sbp, sent_to_icu)
+
+    def schedule_followups_from_followup(self, transitioned: pd.Index, untransitioned: pd.Index,
+                                         followup_groups: pd.Series, visit_date: pd.Timestamp, measured_sbp: pd.Series,
+                                         sent_to_icu: pd.Index):
         scheduled = pd.Index([])
         # set up followups
         for visit_type, idx in followup_groups.iteritems():
             followups = self.followup_schedules[visit_type]
 
             # schedule maintenance for everyone who was treated
-            to_schedule = treated.intersection(idx)
-            self.schedule_followup(to_schedule, 'maintenance', followups['maintenance'],
+            if visit_type == 'maintenance':  # diff schedules for sims who transitioned vs those who didn't
+                transition_schedule = followups['maintenance']['transitioned']
+
+                to_schedule = untransitioned.intersection(idx)
+                self.schedule_followup(to_schedule, 'maintenance', followups['maintenance']['untransitioned'],
+                                       visit_date, from_visit=visit_type)
+                scheduled = scheduled.union(to_schedule)
+            else:  # only schedule maintenance for transitioned sims
+                transition_schedule = followups['maintenance']
+
+            to_schedule = transitioned.intersection(idx)
+            self.schedule_followup(to_schedule, 'maintenance', transition_schedule,
                                    visit_date, from_visit=visit_type)
             scheduled = scheduled.union(to_schedule)
-            # schedule reassessment for everyone who was not treated
-            reassessment_schedules = followups['reassessment']
-            to_schedule = sbp.index.difference(treated).intersection(idx)
-            if isinstance(reassessment_schedules, FollowupDuration):
-                self.schedule_followup(to_schedule, 'reassessment',
-                                       followups['reassessment'], visit_date, from_visit=visit_type)
-                scheduled = scheduled.union(to_schedule)
-            elif isinstance(reassessment_schedules, list):  # list of ConditionalFollowups
-                for cf in reassessment_schedules:
-                    conditional_grp = (pop[pop.age.apply(lambda a: a in cf.age)].index
-                                       .union(sbp[sbp.apply(lambda s: s in cf.measured_sbp)].index))
-                    self.schedule_followup(conditional_grp.intersection(to_schedule), 'reassessment',
-                                           cf.followup_duration, visit_date, from_visit=visit_type)
-                    scheduled = scheduled.union(conditional_grp)
-            else:  # guideline doesn't mandate any reassessment visits scheduled from this visit_type
-                pass
+
+            if 'reassessment' in followups:
+                # schedule reassessment for everyone who was not treated
+                reassessment_schedules = followups['reassessment']
+                to_schedule = untransitioned.intersection(idx)
+                if isinstance(reassessment_schedules, FollowupDuration):
+                    self.schedule_followup(to_schedule, 'reassessment',
+                                           followups['reassessment'], visit_date, from_visit=visit_type)
+                    scheduled = scheduled.union(to_schedule)
+                elif isinstance(reassessment_schedules, list):  # list of ConditionalFollowups
+                    pop = self.population_view.subview(['age']).get(untransitioned)
+                    for cf in reassessment_schedules:
+                        conditional_grp = (pop[pop.age.apply(lambda a: a in cf.age)].index
+                                           .union(measured_sbp[measured_sbp.apply(lambda s: s in cf.measured_sbp)].index))
+                        self.schedule_followup(conditional_grp.intersection(to_schedule), 'reassessment',
+                                               cf.followup_duration, visit_date, from_visit=visit_type)
+                        scheduled = scheduled.union(conditional_grp)
+                else:  # guideline doesn't mandate any reassessment visits scheduled from this visit_type
+                    pass
 
         # clear the scheduled followup date for simulants not scheduled for a
-        # follow so they will get properly processed on future background visits
-        self.population_view.update(pd.Series(pd.NaT, index=sbp.index.difference(scheduled).union(sent_to_icu),
+        # follow up so they will get properly processed on future background visits
+        self.population_view.update(pd.Series(pd.NaT, index=measured_sbp.index.difference(scheduled).union(sent_to_icu),
                                               name='followup_date'))
 
     def send_to_icu(self, sbp):
