@@ -2,7 +2,8 @@ import scipy
 import numpy as np
 import pandas as pd
 
-from loguru import logger
+from typing import Union
+
 from vivarium.framework.engine import Builder
 from vivarium_dcpn_hypertension_mgt.components.utilities import (get_dict_for_guideline, get_durations_in_range,
                                                                  FollowupDuration)
@@ -267,8 +268,8 @@ class TreatmentAlgorithm:
         # measure sbp and use the average of this measurement + last for those here for confirmatory visit
         to_average = followup_groups['confirmatory'] if 'confirmatory' in followup_groups.index else pd.Index([])
         sbp = self.measure_sbp(index, idx_record_these=index, idx_average_these=to_average, event_time=visit_date)
-        # send everyone w/ sbp >= icu threshold to ICU and don't treat them further
-        sent_to_icu = self.send_to_icu(sbp)
+        # send everyone w/ sbp >= icu threshold to ICU and don't treat them further here
+        sent_to_icu = self.send_to_icu(sbp, visit_date)
         sbp = sbp.loc[~sbp.index.isin(sent_to_icu)]
 
         # transition everyone who has a treatment available
@@ -280,11 +281,10 @@ class TreatmentAlgorithm:
         self.fill_prescriptions(self.treatment_profile_model.filter_for_prescribed_treatment(sbp.index))
 
         self.schedule_followups_from_followup(transitioned, sbp.index.difference(transitioned), followup_groups,
-                                              visit_date, sbp, sent_to_icu)
+                                              visit_date, sbp)
 
     def schedule_followups_from_followup(self, transitioned: pd.Index, untransitioned: pd.Index,
-                                         followup_groups: pd.Series, visit_date: pd.Timestamp, measured_sbp: pd.Series,
-                                         sent_to_icu: pd.Index):
+                                         followup_groups: pd.Series, visit_date: pd.Timestamp, measured_sbp: pd.Series):
         scheduled = pd.Index([])
         # set up followups
         for visit_type, idx in followup_groups.iteritems():
@@ -327,12 +327,19 @@ class TreatmentAlgorithm:
 
         # clear the scheduled followup date for simulants not scheduled for a
         # follow up so they will get properly processed on future background visits
-        self.population_view.update(pd.Series(pd.NaT, index=measured_sbp.index.difference(scheduled).union(sent_to_icu),
+        self.population_view.update(pd.Series(pd.NaT, index=measured_sbp.index.difference(scheduled),
                                               name='followup_date'))
 
-    def send_to_icu(self, sbp):
+    def send_to_icu(self, sbp, visit_date):
         icu_threshold = self.guideline_thresholds['icu']
         send_to_icu = sbp.loc[sbp >= icu_threshold].index
+
+        _ = self.transition_treatment(send_to_icu, visit_date)
+        # people sent to icu will always get their meds
+        self.fill_prescriptions(send_to_icu, custom_adherence=True)
+        self.schedule_followup(send_to_icu, 'maintenance', self.followup_schedules['intensive_care_unit']['maintenance'],
+                               visit_date, 'intensive_care_unit')
+
         icu = (self.population_view.subview(['intensive_care_unit_visits_count'])
                .get(send_to_icu).loc[:, 'intensive_care_unit_visits_count'] + 1)
         self.population_view.update(icu)
@@ -351,8 +358,8 @@ class TreatmentAlgorithm:
         sbp = self.measure_sbp(sbp_measured_idx, idx_record_these=sbp_measured_idx[no_followup_scheduled],
                                idx_average_these=pd.Index([]), event_time=visit_date)
 
-        # send everyone w/ sbp >= icu threshold to ICU and don't treat them further
-        sent_to_icu = self.send_to_icu(sbp)
+        # send everyone w/ sbp >= icu threshold to ICU and don't treat them further here
+        sent_to_icu = self.send_to_icu(sbp, visit_date)
         # anyone who has a hypertension followup scheduled or was sent to the ICU
         # should not continue treatment on a background visit
         sbp = sbp.loc[no_followup_scheduled & (~sbp.index.isin(sent_to_icu))]
@@ -393,9 +400,10 @@ class TreatmentAlgorithm:
         self.treatment_profile_model.transition(to_transition, event_time)
         return to_transition
 
-    def fill_prescriptions(self, index):
+    def fill_prescriptions(self, index, custom_adherence: Union[bool, pd.Series] = None):
         # prescription_adherence is a boolean pipeline with T for sims who filled prescription, F for sims who didn't
-        self._prescription_filled.loc[index] = self.prescription_adherence(index)
+        rx_adherence = self.prescription_adherence(index) if custom_adherence is None else custom_adherence
+        self._prescription_filled.loc[index] = rx_adherence
 
     def get_prescriptions_filled(self, index):
         return self._prescription_filled[index]
