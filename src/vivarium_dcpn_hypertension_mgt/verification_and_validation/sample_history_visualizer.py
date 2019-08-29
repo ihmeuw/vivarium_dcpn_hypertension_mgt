@@ -44,7 +44,7 @@ class SampleHistoryVisualizer:
         if not enter_sim_id:
             arg = (1, len(unique_sims)+1, 1)
         else:
-            arg = Text(value=str(unique_sims[0]),placeholder='Type simulant id')
+            arg = Text(value=str(unique_sims[0]), placeholder='simulant id')
 
         @interact(simulant=arg, include_hcu_rate=True)
         def _visualize_simulant_trajectory(simulant, include_hcu_rate):
