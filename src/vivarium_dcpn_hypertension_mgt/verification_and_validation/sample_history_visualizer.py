@@ -35,19 +35,24 @@ class SampleHistoryVisualizer:
         plt.title('Healthcare utilization')
         plt.show()
 
-    def visualize_simulant_trajectory(self):
+    def visualize_simulant_trajectory(self, enter_sim_id=False):
         data = self.data
         step_size = self.step_size
 
-        @interact(simulant_id=Text(
-            value='903',
-            placeholder='Type simulant id'),
-            include_hcu_rate=True)
-        def _visualize_simulant_trajectory(simulant_id, include_hcu_rate):
-            try:
-                simulant = data.loc[int(simulant_id)]
-            except:
-                raise ValueError(f'Simulant {simulant_id} not exist')
+        unique_sims = data.reset_index().simulant.drop_duplicates().sort_values()
+
+        if not enter_sim_id:
+            arg = (1, len(unique_sims)+1, 1)
+        else:
+            arg = Text(value=str(unique_sims[0]),placeholder='Type simulant id')
+
+        @interact(simulant=arg, include_hcu_rate=True)
+        def _visualize_simulant_trajectory(simulant, include_hcu_rate):
+            if isinstance(simulant, str):
+                sim_id = int(simulant)
+            else:
+                sim_id = unique_sims.loc[simulant]
+            simulant = data.loc[sim_id]
 
             sex = simulant.sex[0]
             age = round(simulant.age[0], 1)
@@ -86,12 +91,12 @@ class SampleHistoryVisualizer:
                 ax2.set_yticks(ticks)
                 ax2.plot(hcu, label='hcu rate', color='tab:orange')
 
-            plt.title(f'Sample history for simulant {simulant_id}: a {age} year-old {sex}')
+            plt.title(f'Sample history for simulant {sim_id}: a {age} year-old {sex}')
 
         return _visualize_simulant_trajectory
 
 
-def load_data(results_path, sample_history_file):
+def load_data(results_path, sample_history_file) -> pd.DataFrame:
     data = pd.read_hdf(results_path / sample_history_file)
     data['untreated_sbp'] = data['true_sbp'] + data['medication_effect']
     return data
